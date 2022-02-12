@@ -58,6 +58,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
 ];
 
 if (commands.size != slashCommands.length) {
+  console.log("Updating commands")
   deploy.commands.bulkEdit(slashCommands);
 }
 
