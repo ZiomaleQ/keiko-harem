@@ -209,9 +209,9 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
         components: [
           {
             type: deploy.MessageComponentType.Button,
-            label: "Click",
+            label: "Jeszcze raz",
             style: deploy.ButtonStyle.PRIMARY,
-            customID: "replay"
+            customID: "atak/r",
           },
         ],
       },
@@ -271,6 +271,19 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
           } w tyłek`,
         ).setColor("#ff0000"),
       ],
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.Button,
+              label: "Jeszcze raz",
+              style: deploy.ButtonStyle.PRIMARY,
+              customID: "unik/r",
+            },
+          ],
+        },
+      ],
     });
   } else {
     d.respond({
@@ -280,6 +293,27 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
           `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
         ).setColor("#00ff00"),
       ],
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.Button,
+              label: "Jeszcze raz",
+              style: deploy.ButtonStyle.PRIMARY,
+              customID: "unik/r",
+            },
+          ],
+        },
+      ],
     });
   }
+});
+
+deploy.client.on("interaction", (i) => {
+  if (!i.isMessageComponent()) return;
+
+  console.log(i.message.interaction)
+
+  if (i.data.custom_id) i.respond({ content: "Kozak" });
 });
