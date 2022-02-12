@@ -137,8 +137,8 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const res = (await req.then((resp) => resp.json()));
 
   if (res.errors && res.errors.length > 0) {
-    console.log(d)
-    
+    console.log(JSON.stringify(d))
+
     return d.editResponse({
       ephemeral: true,
       content: "Nie znalazłam tego anime...",
@@ -147,7 +147,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 
   const data = res.data.Media;
 
-  console.log(d)
+  console.log(JSON.stringify(d))
 
   const embed = new deploy.Embed().setTitle("Bonjour!").addField(
     "Tytuł:",
