@@ -1,7 +1,7 @@
 import { deploy } from "./deps.ts";
 import { genRandom, graphql } from "./utils.ts";
 
-deploy.init({ env: true, path: "/webhook" });
+deploy.init({ env: true });
 
 if (Deno.env.get("SYNC") === "TRUE") {
   const commands = await deploy.commands.all();
