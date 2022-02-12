@@ -203,14 +203,6 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
 
   d.respond({
     embeds: [embed],
-    components: [{
-      type: deploy.MessageComponentType.ActionRow,
-      components: [{
-        type: deploy.MessageComponentType.Button,
-        style: deploy.ButtonStyle.PRIMARY,
-        customID: "replay",
-      }],
-    }],
   });
 });
 
