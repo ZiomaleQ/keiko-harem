@@ -201,7 +201,7 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
       .setColor("#ff0000");
   }
 
-  d.editResponse({
+  d.respond({
     embeds: [embed],
   });
 });
