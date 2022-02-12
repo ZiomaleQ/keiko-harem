@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.124.0/http/server.ts";
 deploy.init({ env: true, path: "/webhook" });
 
 serve(async (req) => {
+  console.log(new URL(req.url).pathname)
   if (new URL(req.url).pathname !== "/sync") return new Response();
   const commands = await deploy.commands.all();
 
