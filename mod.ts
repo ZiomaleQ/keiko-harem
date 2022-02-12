@@ -3,81 +3,83 @@ import { genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true, path: "/webhook" });
 
-const commands = await deploy.commands.all();
+if (Deno.env.get("SYNC") === "TRUE") {
+  const commands = await deploy.commands.all();
 
-const slashCommands: deploy.ApplicationCommandPartial[] = [
-  {
-    name: "anime",
-    description: "Info a anime",
-    options: [
-      {
-        name: "nazwa",
-        description: "Nazwa anime którego szukasz",
-        type: "STRING",
-        required: true,
-      },
-    ],
-  },
-  {
-    name: "atak",
-    description: "Atakowańsko",
-    options: [
-      {
-        name: "lvl",
-        description: "Poziom postaci!",
-        type: "INTEGER",
-        minValue: 1,
-        required: true,
-      },
-      {
-        name: "modif",
-        description: "Modyfikator trafienia!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "dmg",
-        description: "Dodatkowe 'AD'!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "krytyczne",
-        description: "Szansa na kryta!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "wartosc-kryt",
-        description: "Mnożnik krytyka!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-    ],
-  },
-  {
-    name: "dice",
-    description: "Losowanko",
-    options: [
-      {
-        name: "max",
-        description: "Maksymalna wartość",
-        type: "INTEGER",
-        required: true,
-      },
-      {
-        name: "min",
-        description: "Minimalna wartość",
-        type: "INTEGER",
-        minValue: 0,
-      },
-    ],
-  },
-];
+  const slashCommands: deploy.ApplicationCommandPartial[] = [
+    {
+      name: "anime",
+      description: "Info a anime",
+      options: [
+        {
+          name: "nazwa",
+          description: "Nazwa anime którego szukasz",
+          type: "STRING",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "atak",
+      description: "Atakowańsko",
+      options: [
+        {
+          name: "lvl",
+          description: "Poziom postaci!",
+          type: "INTEGER",
+          minValue: 1,
+          required: true,
+        },
+        {
+          name: "modif",
+          description: "Modyfikator trafienia!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "dmg",
+          description: "Dodatkowe 'AD'!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "krytyczne",
+          description: "Szansa na kryta!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "wartosc-kryt",
+          description: "Mnożnik krytyka!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "dice",
+      description: "Losowanko",
+      options: [
+        {
+          name: "max",
+          description: "Maksymalna wartość",
+          type: "INTEGER",
+          required: true,
+        },
+        {
+          name: "min",
+          description: "Minimalna wartość",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+  ];
 
-if (commands.size != slashCommands.length) {
-  console.log("updated commands");
-  deploy.commands.bulkEdit(slashCommands);
+  if (commands.size != slashCommands.length) {
+    console.log("updated commands");
+    deploy.commands.bulkEdit(slashCommands);
+  }
 }
 
 deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
