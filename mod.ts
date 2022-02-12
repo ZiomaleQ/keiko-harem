@@ -278,12 +278,3 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
     });
   }
 });
-
-deploy.client.on("interaction", (i) => {
-  console.log(i.message?.id);
-  if (!i.isMessageComponent()) return;
-  if (i.customID === "replay") {
-    console.log(i.message);
-    i.respond({ content: "No to koks" });
-  }
-});
