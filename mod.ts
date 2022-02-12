@@ -201,6 +201,14 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
       .setColor("#ff0000");
   }
 
+  embed.setFooter(
+    `${~~d.option<number>("lvl")}|${~~d.option<number>("modif")}|${~~d.option<
+      number
+    >("dmg")}|${~~d.option<number>("krytyczne")}|${~~d.option<number>(
+      "wartosc-kryt",
+    )}`,
+  );
+
   d.respond({
     embeds: [embed],
     components: [
@@ -269,7 +277,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
           }] Niestety, unik się nie udał...\n Otrzymałeś od życia ${
             Math.floor(dmg)
           } w tyłek`,
-        ).setColor("#ff0000"),
+        ).setColor("#ff0000").setFooter(`${snek}|${dmg}|${armor}`),
       ],
       components: [
         {
@@ -291,7 +299,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
         new deploy.Embed().setTitle("No siemka").addField(
           "Informacje:",
           `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
-        ).setColor("#00ff00"),
+        ).setColor("#00ff00").setFooter(`${snek}|${dmg}|${armor}`),
       ],
       components: [
         {
@@ -313,7 +321,118 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 deploy.client.on("interaction", (i) => {
   if (!i.isMessageComponent()) return;
 
-  console.log(i.message.embeds[0])
+  if (i.data.custom_id === "atak/r") {
+    const data = i.message.embeds[0].footer!.text
+      .split("|")
+      .map((elt) => ~~elt);
 
-  if (i.data.custom_id) i.respond({ content: "Kozak" });
+    const okay = genRandom(0, 40) + data[1];
+    const lvl = data[0] - 1;
+    let dmg = genRandom(0, lvl * 5) + lvl * 10 + data[2] + 30;
+
+    const crit = data[3];
+    const critVal = data[4];
+    const goCrit = (genRandom(0, 100) > crit && crit > 0) || crit == 100;
+
+    if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
+
+    const embed = new deploy.Embed().setTitle("No siemka");
+
+    if (okay >= 15) {
+      embed.addField(
+        "Informacje:",
+        `[${okay}] Trafiłeś${
+          goCrit ? " krytycznie" : ""
+        }, zadałeś ${dmg} obrażeń.`,
+      ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text);
+    } else {
+      embed.addField("Informacje:", `[${okay}] Niestety, atak się nie udał...`)
+        .setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text);
+    }
+
+    i.respond({
+      embeds: [embed],
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.Button,
+              label: "Jeszcze raz",
+              style: deploy.ButtonStyle.PRIMARY,
+              customID: "atak/r",
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  if (i.data.custom_id === "unik/r") {
+    const data = i.message.embeds[0].footer!.text
+      .split("|")
+      .map((elt) => ~~elt);
+
+    const snek = data[0];
+    let dmg = data[1];
+    const armor = data[2];
+
+    //80 - 100% żeby lekko zmniejszyć dmg
+    dmg = Math.floor(dmg * (0.8 + (genRandom(0, 20) / 100)));
+
+    const okay = genRandom(1, 100);
+
+    if (okay > snek) {
+      if (armor > 0) {
+        dmg = dmg * (100 / (100 + armor));
+      }
+      i.respond({
+        embeds: [
+          new deploy.Embed().setTitle("No siemka").addField(
+            "Informacje:",
+            `[${
+              Math.floor(okay / 2.5)
+            }] Niestety, unik się nie udał...\n Otrzymałeś od życia ${
+              Math.floor(dmg)
+            } w tyłek`,
+          ).setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text),
+        ],
+        components: [
+          {
+            type: deploy.MessageComponentType.ActionRow,
+            components: [
+              {
+                type: deploy.MessageComponentType.Button,
+                label: "Jeszcze raz",
+                style: deploy.ButtonStyle.PRIMARY,
+                customID: "unik/r",
+              },
+            ],
+          },
+        ],
+      });
+    } else {
+      i.respond({
+        embeds: [
+          new deploy.Embed().setTitle("No siemka").addField(
+            "Informacje:",
+            `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
+          ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text),
+        ],
+        components: [
+          {
+            type: deploy.MessageComponentType.ActionRow,
+            components: [
+              {
+                type: deploy.MessageComponentType.Button,
+                label: "Jeszcze raz",
+                style: deploy.ButtonStyle.PRIMARY,
+                customID: "unik/r",
+              },
+            ],
+          },
+        ],
+      });
+    }
+  }
 });
