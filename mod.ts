@@ -48,7 +48,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
         minValue: 0,
       },
       {
-        name: "wartość kryta",
+        name: "wartosc-kryt",
         description: "Mnożnik krytyka!",
         type: "INTEGER",
         minValue: 0,
@@ -127,7 +127,7 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
   let dmg = genRandom(0, lvl * 5) + lvl * 10 + d.option<number>("dmg") + 30;
 
   const crit = d.option<number>("krytyczne");
-  const critVal = d.option<number>("wartość kryta");
+  const critVal = d.option<number>("wartosc-kryt");
   const goCrit = genRandom(0, 100) > crit && crit > 0 || crit == 100;
 
   if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
