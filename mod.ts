@@ -149,7 +149,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 
   const embed = new deploy.Embed().setTitle("Bonjour!").addField(
     "Tytuł:",
-    data.title.english,
+    data.title.english ?? data.title.romaji,
     true,
   ).setColor(data.coverImage.color).setImage(data.coverImage.large).addField(
     "Status:",
