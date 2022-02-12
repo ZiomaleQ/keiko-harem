@@ -313,7 +313,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 deploy.client.on("interaction", (i) => {
   if (!i.isMessageComponent()) return;
 
-  console.log(i.message.interaction)
+  console.log(i.message.embeds[0].description)
 
   if (i.data.custom_id) i.respond({ content: "Kozak" });
 });
