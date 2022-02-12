@@ -141,13 +141,13 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
   d.defer(true);
 
-  const okay = genRandom(0, 40) + d.option<number>("modif");
+  const okay = genRandom(0, 40) + ~~d.option<number>("modif");
   const lvl = d.option<number>("lvl") - 1;
-  let dmg = genRandom(0, lvl * 5) + lvl * 10 + d.option<number>("dmg") + 30;
+  let dmg = genRandom(0, lvl * 5) + lvl * 10 + ~~d.option<number>("dmg") + 30;
 
-  const crit = d.option<number>("krytyczne");
-  const critVal = d.option<number>("wartosc-kryt");
-  const goCrit = genRandom(0, 100) > crit && crit > 0 || crit == 100;
+  const crit = ~~d.option<number>("krytyczne");
+  const critVal = ~~d.option<number>("wartosc-kryt");
+  const goCrit = (genRandom(0, 100) > crit && crit > 0) || crit == 100;
 
   if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
 
@@ -172,7 +172,7 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
 
 deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
   const max = Math.abs(d.option<number>("max"));
-  const min = Math.abs(d.option<number>("min"));
+  const min = Math.abs(~~d.option<number>("min"));
 
   return d.respond({
     embeds: [
