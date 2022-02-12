@@ -210,6 +210,8 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
           {
             type: deploy.MessageComponentType.Button,
             label: "Click",
+            style: deploy.ButtonStyle.PRIMARY,
+            customID: "replay"
           },
         ],
       },
