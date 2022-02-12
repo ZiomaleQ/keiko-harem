@@ -74,6 +74,43 @@ if (Deno.env.get("SYNC") === "TRUE") {
         },
       ],
     },
+    {
+      name: "pancerz",
+      description: "Oblicz zmniejszenie obrażeń",
+      options: [
+        {
+          name: "pancerz",
+          description: "Ilość pancerza",
+          type: "INTEGER",
+          required: true,
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "unik",
+      description: "Unikańsko",
+      options: [
+        {
+          name: "unik",
+          description: "Wartość uniku",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "dmg",
+          description: "Obrażenia jakie dostajesz",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "pancerz",
+          description: "Pancerz postaci",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
   ];
 
   if (commands.size != slashCommands.length) {
@@ -184,4 +221,55 @@ deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
       ).setColor("#00ff00"),
     ],
   });
+});
+
+deploy.handle("pancerz", (d: deploy.SlashCommandInteraction) => {
+  const pancerz = d.option<number>("pancerz");
+
+  return d.respond({
+    embeds: [
+      new deploy.Embed().setTitle("No heja").addField(
+        "Redukcja obrażeń:",
+        `${Math.floor(100 / (100 + pancerz) * 100)}%`,
+      ),
+    ],
+  });
+});
+
+deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
+  const snek = ~~d.option<number>("unik");
+  let dmg = ~~d.option<number>("dmg");
+  const armor = ~~d.option<number>("pancerz");
+
+  //80 - 100% żeby lekko zmniejszyć dmg
+  dmg = Math.floor(dmg * (0.8 + (genRandom(0, 20) / 100)));
+
+  const okay = genRandom(1, 100);
+
+  if (okay > snek) {
+    if (armor > 0) {
+      dmg = dmg * (100 / (100 + armor));
+    }
+    d.respond({
+      embeds: [
+        new deploy.Embed().setTitle("No siemka").addField(
+          "Informacje:",
+          `[${
+            Math.floor(okay / 2.5)
+          }] Niestety, unik się nie udał...\n Otrzymałeś od życia ${
+            Math.floor(dmg)
+          } w tyłek`,
+        ).setColor("#ff0000"),
+      ],
+    });
+  } else {
+    d.respond({
+      embeds: [
+        new deploy.Embed().setTitle("No siemka").addField(
+          "Informacje:",
+          `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
+        ).setColor("#00ff00"),
+      ],
+    });
+  }
 });
