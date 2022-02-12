@@ -145,6 +145,8 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 
   const data = res.data.Media;
 
+  console.log(data)
+
   const embed = new deploy.Embed().setTitle("Bonjour!").addField(
     "Tytuł:",
     data.title.english,
