@@ -203,6 +203,14 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
 
   d.respond({
     embeds: [embed],
+    components: [{
+      type: deploy.MessageComponentType.ActionRow,
+      components: [{
+        type: deploy.MessageComponentType.Button,
+        style: deploy.ButtonStyle.PRIMARY,
+        customID: "replay",
+      }],
+    }],
   });
 });
 
@@ -268,5 +276,13 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
         ).setColor("#00ff00"),
       ],
     });
+  }
+});
+
+deploy.client.on("interaction", (i) => {
+  if (!i.isMessageComponent()) return;
+  if (i.customID === "replay") {
+    console.log(i.message);
+    i.respond({ content: "No to koks" });
   }
 });
