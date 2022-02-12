@@ -1,84 +1,90 @@
 import { deploy } from "./deps.ts";
 import { genRandom, graphql } from "./utils.ts";
+import { serve } from "https://deno.land/std@0.124.0/http/server.ts";
 
-deploy.init({ env: true });
+deploy.init({ env: true, path: "/webhook" });
 
-const commands = await deploy.commands.all();
+serve(async (req) => {
+  if (new URL(req.url).pathname !== "/sync") return new Response();
+  const commands = await deploy.commands.all();
 
-const slashCommands: deploy.ApplicationCommandPartial[] = [
-  {
-    name: "anime",
-    description: "Info a anime",
-    options: [
-      {
-        name: "nazwa",
-        description: "Nazwa anime którego szukasz",
-        type: "STRING",
-        required: true,
-      },
-    ],
-  },
-  {
-    name: "atak",
-    description: "Atakowańsko",
-    options: [
-      {
-        name: "lvl",
-        description: "Poziom postaci!",
-        type: "INTEGER",
-        minValue: 1,
-        required: true,
-      },
-      {
-        name: "modif",
-        description: "Modyfikator trafienia!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "dmg",
-        description: "Dodatkowe 'AD'!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "krytyczne",
-        description: "Szansa na kryta!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-      {
-        name: "wartosc-kryt",
-        description: "Mnożnik krytyka!",
-        type: "INTEGER",
-        minValue: 0,
-      },
-    ],
-  },
-  {
-    name: "dice",
-    description: "Losowanko",
-    options: [
-      {
-        name: "max",
-        description: "Maksymalna wartość",
-        type: "INTEGER",
-        required: true,
-      },
-      {
-        name: "min",
-        description: "Minimalna wartość",
-        type: "INTEGER",
-        minValue: 0,
-      },
-    ],
-  },
-];
+  const slashCommands: deploy.ApplicationCommandPartial[] = [
+    {
+      name: "anime",
+      description: "Info a anime",
+      options: [
+        {
+          name: "nazwa",
+          description: "Nazwa anime którego szukasz",
+          type: "STRING",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "atak",
+      description: "Atakowańsko",
+      options: [
+        {
+          name: "lvl",
+          description: "Poziom postaci!",
+          type: "INTEGER",
+          minValue: 1,
+          required: true,
+        },
+        {
+          name: "modif",
+          description: "Modyfikator trafienia!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "dmg",
+          description: "Dodatkowe 'AD'!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "krytyczne",
+          description: "Szansa na kryta!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "wartosc-kryt",
+          description: "Mnożnik krytyka!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "dice",
+      description: "Losowanko",
+      options: [
+        {
+          name: "max",
+          description: "Maksymalna wartość",
+          type: "INTEGER",
+          required: true,
+        },
+        {
+          name: "min",
+          description: "Minimalna wartość",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+  ];
 
-if (commands.size != slashCommands.length) {
-  console.log("Updating commands");
-  deploy.commands.bulkEdit(slashCommands);
-}
+  if (commands.size != slashCommands.length) {
+    deploy.commands.bulkEdit(slashCommands);
+    return new Response("Updated commands");
+  }
+
+  return new Response("No commands were updated");
+});
 
 deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const req = fetch("https://graphql.anilist.co", {
@@ -183,5 +189,3 @@ deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
     ],
   });
 });
-
-addEventListener("fetch", console.log);
