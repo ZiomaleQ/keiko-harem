@@ -42,7 +42,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const res = (await req.then((resp) => resp.json()));
 
   if (res.errors && res.errors.length > 0) {
-    return d.respond({
+    return d.editResponse({
       ephemeral: true,
       content: "Nie znalazłam tego anime...",
     });
@@ -82,7 +82,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
       true,
     );
 
-  d.respond({
+  d.editResponse({
     embeds: [embed],
   });
 });
