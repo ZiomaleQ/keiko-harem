@@ -132,7 +132,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
     method: "POST",
   });
 
-  d.defer(true);
+  d.defer();
 
   const res = (await req.then((resp) => resp.json()));
 
@@ -144,8 +144,6 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   }
 
   const data = res.data.Media;
-
-  console.log(data)
 
   const embed = new deploy.Embed().setTitle("Bonjour!").addField(
     "Tytuł:",
