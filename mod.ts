@@ -183,3 +183,5 @@ deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
     ],
   });
 });
+
+addEventListener("fetch", console.log);
