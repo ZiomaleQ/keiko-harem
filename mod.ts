@@ -57,6 +57,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
   },
   {
     name: "dice",
+    description: "Losowanko",
     options: [
       {
         name: "max",
