@@ -113,8 +113,6 @@ if (Deno.env.get("SYNC") === "TRUE") {
     },
   ];
 
-  console.log(commands.size, slashCommands.length)
-
   if (commands.size != slashCommands.length) {
     console.log("updated commands");
     deploy.commands.bulkEdit(slashCommands);
@@ -140,7 +138,6 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 
   if (res.errors && res.errors.length > 0) {
     return d.editResponse({
-      ephemeral: true,
       content: "Nie znalazłam tego anime...",
     });
   }
@@ -180,8 +177,6 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 });
 
 deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
-  d.defer(true);
-
   const okay = genRandom(0, 40) + ~~d.option<number>("modif");
   const lvl = d.option<number>("lvl") - 1;
   let dmg = genRandom(0, lvl * 5) + lvl * 10 + ~~d.option<number>("dmg") + 30;
