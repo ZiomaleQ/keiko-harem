@@ -55,10 +55,27 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
       },
     ],
   },
+  {
+    name: "dice",
+    options: [
+      {
+        name: "max",
+        description: "Maksymalna wartość",
+        type: "INTEGER",
+        required: true,
+      },
+      {
+        name: "min",
+        description: "Minimalna wartość",
+        type: "INTEGER",
+        minValue: 0,
+      },
+    ],
+  },
 ];
 
 if (commands.size != slashCommands.length) {
-  console.log("Updating commands")
+  console.log("Updating commands");
   deploy.commands.bulkEdit(slashCommands);
 }
 
@@ -149,5 +166,19 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
 
   d.editResponse({
     embeds: [embed],
+  });
+});
+
+deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
+  const max = Math.abs(d.option<number>("max"));
+  const min = Math.abs(d.option<number>("min"));
+
+  return d.respond({
+    embeds: [
+      new deploy.Embed().setTitle("No siemka").addField(
+        "Informacje:",
+        `Wylosowałam: __***\`${genRandom(min, max)}\`***__.`,
+      ).setColor("#00ff00"),
+    ],
   });
 });
