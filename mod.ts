@@ -3,7 +3,7 @@ import { genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
 
-console.log(Deno.env.get("SYNC"))
+console.log(Deno.env.get("SYNC") === "TRUE")
 
 if (Deno.env.get("SYNC") === "TRUE") {
   const commands = await deploy.commands.all();
