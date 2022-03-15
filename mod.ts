@@ -346,28 +346,28 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
   }
 });
 
-deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
-  if (d.message?.author.id !== d.guild?.ownerID) {
-    return d.respond({
-      content: "Nie jesteś właścicielem",
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
-    });
-  }
+deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
+  // if (d.message?.author.id !== d.guild?.ownerID) {
+  //   return d.respond({
+  //     content: "Nie jesteś właścicielem",
+  //     flags: deploy.InteractionResponseFlags.EPHEMERAL,
+  //   });
+  // }
 
-  d.defer();
+  // d.defer();
 
-  const roles = (await deploy.client
-    // deno-lint-ignore no-explicit-any
-    .rest.api.guilds[d.guild?.id ?? ""].roles.get() as any[]).filter((elt) =>
-      elt.name != "@everyone"
-    );
+  // const roles = (await deploy.client
+  //   // deno-lint-ignore no-explicit-any
+  //   .rest.api.guilds[d.guild?.id ?? ""].roles.get() as any[]).filter((elt) =>
+  //     elt.name != "@everyone"
+  //   );
 
-  if (d.guild === undefined) {
-    return d.respond({
-      content: "Nie w serwerze",
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
-    });
-  }
+  // if (d.guild === undefined) {
+  //   return d.respond({
+  //     content: "Nie w serwerze",
+  //     flags: deploy.InteractionResponseFlags.EPHEMERAL,
+  //   });
+  // }
 
   d.showModal({
     title: "Autorole menu",
