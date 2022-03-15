@@ -347,12 +347,11 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 });
 
 deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
-
   d.defer();
 
-  const roles = await d.guild?.roles.fetchAll();
+  console.log(d.guild);
 
-  console.log(d.guild)
+  const roles = await d.guild?.roles.fetchAll();
 
   if (roles === undefined) {
     return d.respond({
@@ -544,6 +543,5 @@ deploy.client.on("interaction", (i) => {
       });
     }
   }
-
-  console.log(i.data)
+  console.log(i.data);
 });
