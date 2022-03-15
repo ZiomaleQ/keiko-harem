@@ -369,7 +369,7 @@ deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
   //   });
   // }
 
-  d.showModal({
+  return d.showModal({
     title: "Autorole menu",
     customID: "autorole_modal",
     components: [
