@@ -356,9 +356,11 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
 
   d.defer();
 
-  const roles = await deploy.client
+  const roles = (await deploy.client
     // deno-lint-ignore no-explicit-any
-    .rest.api.guilds[d.guild?.id ?? ""].roles.get() as any[];
+    .rest.api.guilds[d.guild?.id ?? ""].roles.get() as any[]).filter((elt) =>
+      elt.name != "@everyone"
+    );
 
   if (d.guild === undefined) {
     return d.respond({
@@ -375,6 +377,7 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
           components: [
             {
               type: deploy.MessageComponentType.SELECT,
+              maxValues: roles.length,
               options: roles.slice(0, 24).map((elt) => {
                 return {
                   label: elt.name,
@@ -413,7 +416,7 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
                   value: elt.id,
                 } as deploy.SelectComponentOption;
               }),
-              customID: "autorole/set",
+              customID: "autorole/set/end",
             },
           ],
         },
@@ -543,5 +546,9 @@ deploy.client.on("interaction", (i) => {
       });
     }
   }
+
+
+
   console.log(i.data);
+  i.respond({ content: "Calm down not implemented" });
 });
