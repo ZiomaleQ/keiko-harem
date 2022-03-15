@@ -352,8 +352,6 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
   const roles = await deploy.client.rest.api.guilds[d.guild?.id ?? ""].roles
     .get();
 
-  console.log(roles);
-
   // if (roles === undefined) {
   //   return d.respond({
   //     content: "Nie w serwerze",
@@ -362,13 +360,16 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
   // }
 
   if (d.message?.author.id !== d.guild?.ownerID) {
+    console.log("ez")
     return d.respond({
       content: "Nie jesteś właścicielem",
       flags: deploy.InteractionResponseFlags.EPHEMERAL,
     });
   }
 
-  d.respond({ content: "hack" });
+  console.log("nie ez")
+
+  d.respond({ content: "hack " + roles.length });
 
   // if (roles.length > 25) {
   //   d.respond({
