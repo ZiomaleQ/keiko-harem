@@ -349,16 +349,17 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
   d.defer();
 
-  console.log(await d.guild?.roles.fetchAll());
+  const roles = await deploy.client.rest.api.guilds[d.guild?.id ?? ""].roles
+    .get();
 
-  const roles = await d.guild?.roles.fetchAll();
+  console.log(roles);
 
-  if (roles === undefined) {
-    return d.respond({
-      content: "Nie w serwerze",
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
-    });
-  }
+  // if (roles === undefined) {
+  //   return d.respond({
+  //     content: "Nie w serwerze",
+  //     flags: deploy.InteractionResponseFlags.EPHEMERAL,
+  //   });
+  // }
 
   if (d.message?.author.id !== d.guild?.ownerID) {
     return d.respond({
@@ -367,59 +368,61 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  if (roles.length > 25) {
-    d.respond({
-      components: [
-        {
-          type: deploy.MessageComponentType.ActionRow,
-          components: [
-            {
-              type: deploy.MessageComponentType.SELECT,
-              options: roles.slice(0, 24).map((elt) => {
-                return {
-                  label: elt.name,
-                  value: elt.id,
-                } as deploy.SelectComponentOption;
-              }),
-              customID: "autorole/set",
-            },
-            {
-              type: deploy.MessageComponentType.Button,
-              customID: "autorole/next/1",
-              label: "Kolejna strona",
-              style: "PRIMARY",
-            },
-            {
-              type: deploy.MessageComponentType.Button,
-              customID: "autorole/skipPage/1",
-              label: "Pomiń stronę",
-              style: "PRIMARY",
-            },
-          ],
-        },
-      ],
-    });
-  } else {
-    d.respond({
-      components: [
-        {
-          type: deploy.MessageComponentType.ActionRow,
-          components: [
-            {
-              type: deploy.MessageComponentType.SELECT,
-              options: roles.map((elt) => {
-                return {
-                  label: elt.name,
-                  value: elt.id,
-                } as deploy.SelectComponentOption;
-              }),
-              customID: "autorole/set",
-            },
-          ],
-        },
-      ],
-    });
-  }
+  d.respond({ content: "hack" });
+
+  // if (roles.length > 25) {
+  //   d.respond({
+  //     components: [
+  //       {
+  //         type: deploy.MessageComponentType.ActionRow,
+  //         components: [
+  //           {
+  //             type: deploy.MessageComponentType.SELECT,
+  //             options: roles.slice(0, 24).map((elt) => {
+  //               return {
+  //                 label: elt.name,
+  //                 value: elt.id,
+  //               } as deploy.SelectComponentOption;
+  //             }),
+  //             customID: "autorole/set",
+  //           },
+  //           {
+  //             type: deploy.MessageComponentType.Button,
+  //             customID: "autorole/next/1",
+  //             label: "Kolejna strona",
+  //             style: "PRIMARY",
+  //           },
+  //           {
+  //             type: deploy.MessageComponentType.Button,
+  //             customID: "autorole/skipPage/1",
+  //             label: "Pomiń stronę",
+  //             style: "PRIMARY",
+  //           },
+  //         ],
+  //       },
+  //     ],
+  //   });
+  // } else {
+  //   d.respond({
+  //     components: [
+  //       {
+  //         type: deploy.MessageComponentType.ActionRow,
+  //         components: [
+  //           {
+  //             type: deploy.MessageComponentType.SELECT,
+  //             options: roles.map((elt) => {
+  //               return {
+  //                 label: elt.name,
+  //                 value: elt.id,
+  //               } as deploy.SelectComponentOption;
+  //             }),
+  //             customID: "autorole/set",
+  //           },
+  //         ],
+  //       },
+  //     ],
+  //   });
+  // }
 });
 
 deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
