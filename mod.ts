@@ -351,6 +351,8 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
 
   const roles = await d.guild?.roles.fetchAll();
 
+  console.log("im still handling 2")
+
   if (roles === undefined) {
     return d.respond({
       content: "Nie w serwerze",
