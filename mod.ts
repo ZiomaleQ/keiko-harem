@@ -369,23 +369,26 @@ deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
   //   });
   // }
 
-  return d.showModal({
-    title: "Autorole menu",
-    customID: "autorole_modal",
-    components: [
-      {
-        type: deploy.MessageComponentType.ActionRow,
-        components: [
-          {
-            type: deploy.MessageComponentType.Button,
-            label: "X",
-            customID: "yikes",
-            style: "PRIMARY",
-          },
-        ],
-      },
-    ],
-  });
+  return d.respond(
+    {
+      type: 9,
+      title: "Autorole menu",
+      customID: "autorole_modal",
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.Button,
+              label: "X",
+              customID: "yikes",
+              style: "PRIMARY",
+            },
+          ],
+        },
+      ],
+    },
+  );
 });
 
 deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
