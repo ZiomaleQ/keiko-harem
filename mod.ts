@@ -391,9 +391,9 @@ deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
   );
 });
 
-deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
-  d.respond({ content: "Autorole msg cmd" });
-});
+// deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
+//   d.respond({ content: "Autorole msg cmd" });
+// });
 
 deploy.client.on("interaction", (i) => {
   if (!i.isMessageComponent()) return;
