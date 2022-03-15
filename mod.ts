@@ -3,7 +3,7 @@ import { genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
 
-if (Deno.env.get("SYNC") === "TRUE") {
+// if (Deno.env.get("SYNC") === "TRUE") {
   const commands = await deploy.commands.all();
 
   const slashCommands: deploy.ApplicationCommandPartial[] = [
@@ -145,7 +145,8 @@ if (Deno.env.get("SYNC") === "TRUE") {
     console.log("updated commands");
     deploy.commands.bulkEdit(slashCommands);
   }
-}
+
+// }
 
 deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const req = fetch("https://graphql.anilist.co", {
