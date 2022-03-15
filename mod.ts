@@ -347,11 +347,10 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 });
 
 deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
-  console.log("im still handling")
+
+  d.defer();
 
   const roles = await d.guild?.roles.fetchAll();
-
-  console.log("im still handling 2")
 
   if (roles === undefined) {
     return d.respond({
@@ -458,7 +457,7 @@ deploy.client.on("interaction", (i) => {
         .setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text);
     }
 
-    i.respond({
+    return i.respond({
       embeds: [embed],
       components: [
         {
@@ -494,7 +493,7 @@ deploy.client.on("interaction", (i) => {
       if (armor > 0) {
         dmg = dmg * (100 / (100 + armor));
       }
-      i.respond({
+      return i.respond({
         embeds: [
           new deploy.Embed().setTitle("No siemka").addField(
             "Informacje:",
@@ -520,7 +519,7 @@ deploy.client.on("interaction", (i) => {
         ],
       });
     } else {
-      i.respond({
+      return i.respond({
         embeds: [
           new deploy.Embed().setTitle("No siemka").addField(
             "Informacje:",
@@ -543,4 +542,6 @@ deploy.client.on("interaction", (i) => {
       });
     }
   }
+
+  console.log(i.data)
 });
