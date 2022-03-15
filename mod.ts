@@ -3,7 +3,7 @@ import { genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
 
-// if (Deno.env.get("SYNC") === "TRUE") {
+if (Deno.env.get("SYNC") === "TRUE") {
   const commands = await deploy.commands.all();
 
   const slashCommands: deploy.ApplicationCommandPartial[] = [
@@ -145,8 +145,7 @@ deploy.init({ env: true });
     console.log("updated commands");
     deploy.commands.bulkEdit(slashCommands);
   }
-
-// }
+}
 
 deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const req = fetch("https://graphql.anilist.co", {
@@ -347,8 +346,76 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
   }
 });
 
-deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
-  d.respond({ content: "Autrole / cmd" });
+deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
+  const roles = await d.guild?.roles.fetchAll();
+
+  if (roles === undefined) {
+    return d.respond({
+      content: "Nie w serwerze",
+      flags: deploy.InteractionResponseFlags.EPHEMERAL,
+    });
+  }
+
+  if (d.message?.author.id !== d.guild?.ownerID) {
+    return d.respond({
+      content: "Nie jesteś właścicielem",
+      flags: deploy.InteractionResponseFlags.EPHEMERAL,
+    });
+  }
+
+  if (roles.length > 25) {
+    d.respond({
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.SELECT,
+              options: roles.slice(0, 24).map((elt) => {
+                return {
+                  label: elt.name,
+                  value: elt.id,
+                } as deploy.SelectComponentOption;
+              }),
+              customID: "autorole/set",
+            },
+            {
+              type: deploy.MessageComponentType.Button,
+              customID: "autorole/next/1",
+              label: "Kolejna strona",
+              style: "PRIMARY",
+            },
+            {
+              type: deploy.MessageComponentType.Button,
+              customID: "autorole/skipPage/1",
+              label: "Pomiń stronę",
+              style: "PRIMARY",
+            },
+          ],
+        },
+      ],
+    });
+  } else {
+    d.respond({
+      components: [
+        {
+          type: deploy.MessageComponentType.ActionRow,
+          components: [
+            {
+              type: deploy.MessageComponentType.SELECT,
+              options: roles.map((elt) => {
+                return {
+                  label: elt.name,
+                  value: elt.id,
+                } as deploy.SelectComponentOption;
+              }),
+              customID: "autorole/set",
+            },
+          ],
+        },
+      ],
+    });
+  }
 });
 
 deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
