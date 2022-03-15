@@ -349,7 +349,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
   d.defer();
 
-  console.log(d.guild?.roles);
+  console.log(await d.guild?.roles.fetchAll());
 
   const roles = await d.guild?.roles.fetchAll();
 
