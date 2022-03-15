@@ -369,31 +369,25 @@ deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
   //   });
   // }
 
-  return d.respond(
-    {
-      type: 9,
-      title: "Autorole menu",
-      customID: "autorole_modal",
-      components: [
-        {
-          type: deploy.MessageComponentType.ActionRow,
-          components: [
-            {
-              type: deploy.MessageComponentType.Button,
-              label: "X",
-              customID: "yikes",
-              style: "PRIMARY",
-            },
-          ],
-        },
-      ],
-    },
-  );
+  return d.showModal({
+    title: "Form",
+    customID: "Form",
+    components: [
+      {
+        type: "ACTION_ROW",
+        components: [
+          {
+            type: "TEXT_INPUT",
+            customID: "text_input_short",
+            label: "Short text",
+            style: "SHORT",
+            placeholder: "Enter something short",
+          },
+        ],
+      },
+    ],
+  });
 });
-
-// deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
-//   d.respond({ content: "Autorole msg cmd" });
-// });
 
 deploy.client.on("interaction", (i) => {
   if (!i.isMessageComponent()) return;
