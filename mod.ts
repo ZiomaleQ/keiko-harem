@@ -349,6 +349,8 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
   const roles = await d.guild?.roles.fetchAll();
 
+  console.log("im still handling")
+
   if (roles === undefined) {
     return d.respond({
       content: "Nie w serwerze",
