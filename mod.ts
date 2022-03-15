@@ -369,60 +369,23 @@ deploy.handle("autorole", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  if (roles.length > 25) {
-    d.editResponse({
-      components: [
-        {
-          type: deploy.MessageComponentType.ActionRow,
-          components: [
-            {
-              type: deploy.MessageComponentType.SELECT,
-              maxValues: roles.length,
-              options: roles.slice(0, 24).map((elt) => {
-                return {
-                  label: elt.name,
-                  value: elt.id,
-                } as deploy.SelectComponentOption;
-              }),
-              customID: "autorole/set",
-            },
-            {
-              type: deploy.MessageComponentType.Button,
-              customID: "autorole/next/1",
-              label: "Kolejna strona",
-              style: "PRIMARY",
-            },
-            {
-              type: deploy.MessageComponentType.Button,
-              customID: "autorole/skipPage/1",
-              label: "Pomiń stronę",
-              style: "PRIMARY",
-            },
-          ],
-        },
-      ],
-    });
-  } else {
-    d.editResponse({
-      components: [
-        {
-          type: deploy.MessageComponentType.ActionRow,
-          components: [
-            {
-              type: deploy.MessageComponentType.SELECT,
-              options: roles.map((elt) => {
-                return {
-                  label: elt.name,
-                  value: elt.id,
-                } as deploy.SelectComponentOption;
-              }),
-              customID: "autorole/set/end",
-            },
-          ],
-        },
-      ],
-    });
-  }
+  d.showModal({
+    title: "Autorole menu",
+    customID: "autorole_modal",
+    components: [
+      {
+        type: deploy.MessageComponentType.ActionRow,
+        components: [
+          {
+            type: deploy.MessageComponentType.Button,
+            label: "X",
+            customID: "yikes",
+            style: "PRIMARY",
+          },
+        ],
+      },
+    ],
+  });
 });
 
 deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
@@ -546,8 +509,6 @@ deploy.client.on("interaction", (i) => {
       });
     }
   }
-
-
 
   console.log(i.data);
   i.respond({ content: "Calm down not implemented" });
