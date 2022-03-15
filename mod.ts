@@ -111,6 +111,34 @@ if (Deno.env.get("SYNC") === "TRUE") {
         },
       ],
     },
+    {
+      name: "autorole",
+      description: "Autorolowańsko",
+      options: [
+        {
+          name: "tytuł",
+          description: "Tytuł wiadomości",
+          type: "STRING",
+          required: true,
+        },
+        {
+          name: "opis",
+          description: "Opis menu",
+          type: "STRING",
+          required: true,
+        },
+        {
+          name: "kanał",
+          description: "Kanał na który wysłać wiadomość",
+          type: "CHANNEL",
+          required: false,
+        },
+      ],
+    },
+    {
+      name: "zaktualizuj autorole",
+      type: "MESSAGE",
+    },
   ];
 
   if (commands.size != slashCommands.length) {
@@ -316,6 +344,14 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
       ],
     });
   }
+});
+
+deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
+  d.respond({ content: "Autrole / cmd" });
+});
+
+deploy.handle("zaktualizuj autorole", (d: deploy.SlashCommandInteraction) => {
+  d.respond({ content: "Autorole msg cmd" });
 });
 
 deploy.client.on("interaction", (i) => {
