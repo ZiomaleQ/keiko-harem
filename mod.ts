@@ -196,7 +196,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
 
 // if (commands.size != slashCommands.length) {
 //   console.log("updated commands");
-deploy.commands.bulkEdit(slashCommands);
+// deploy.commands.bulkEdit(slashCommands);
 //   }
 // }
 
@@ -462,6 +462,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("XD");
+
   const component: deploy.ButtonComponent = {
     type: deploy.MessageComponentType.Button,
     label: role.name,
@@ -484,6 +486,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("XD1");
+
   flattenedComponents.push(component);
 
   if (flattenedComponents.length > 25) {
@@ -491,6 +495,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       content: "Nie można dodać więcej przyciskow...",
     });
   }
+
+  console.log("XD2");
 
   const splitted = chunk(flattenedComponents, 5);
   const components = [];
@@ -502,8 +508,12 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("XD3");
+
   await deploy.client.rest.api.channels[channel.id].messages[message.id]
     .patch({ embeds: message.embeds, components });
+
+  console.log("XD4");
 
   d.editResponse({
     content: "Zrobione!",
