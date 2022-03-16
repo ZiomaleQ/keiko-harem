@@ -116,6 +116,32 @@ if (Deno.env.get("SYNC") === "TRUE") {
       description: "Autorolowańsko",
       options: [
         {
+          type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+          name: "dodaj",
+          description: "Dodaj role do menu",
+          options: [
+            {
+              type: "ROLE",
+              name: "rola",
+              description: "Rola jaką dodać",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+          name: "usun",
+          description: "Usun role z menu",
+          options: [
+            {
+              type: "ROLE",
+              name: "rola",
+              description: "Rola jaką usunąć",
+              required: true,
+            },
+          ],
+        },
+        {
           name: "tytuł",
           description: "Tytuł wiadomości",
           type: "STRING",
@@ -347,46 +373,15 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 });
 
 deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
-  // if (d.message?.author.id !== d.guild?.ownerID) {
-  //   return d.respond({
-  //     content: "Nie jesteś właścicielem",
-  //     flags: deploy.InteractionResponseFlags.EPHEMERAL,
-  //   });
-  // }
+  d.reply("XD");
+});
 
-  // d.defer();
+deploy.handle("autorole dodaj", (d: deploy.SlashCommandInteraction) => {
+  d.reply("XD1");
+});
 
-  // const roles = (await deploy.client
-  //   // deno-lint-ignore no-explicit-any
-  //   .rest.api.guilds[d.guild?.id ?? ""].roles.get() as any[]).filter((elt) =>
-  //     elt.name != "@everyone"
-  //   );
-
-  // if (d.guild === undefined) {
-  //   return d.respond({
-  //     content: "Nie w serwerze",
-  //     flags: deploy.InteractionResponseFlags.EPHEMERAL,
-  //   });
-  // }
-
-  return d.showModal({
-    title: "Form",
-    customID: "Form",
-    components: [
-      {
-        type: "ACTION_ROW",
-        components: [
-          {
-            type: "TEXT_INPUT",
-            customID: "text_input_short",
-            label: "Short text",
-            style: "SHORT",
-            placeholder: "Enter something short",
-          },
-        ],
-      },
-    ],
-  });
+deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
+  d.reply("XD2");
 });
 
 deploy.client.on("interaction", (i) => {
