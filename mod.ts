@@ -409,7 +409,9 @@ deploy.handle("autorole stworz", async (d: deploy.SlashCommandInteraction) => {
     await deploy.client.rest.api.channels[channel.id].messages[message.id]
       .patch({ embeds: [embed.setFooter(`ID: ${message.id}`)] });
   } else {
-    const message = await d.send({ embeds: [embed] });
+    //Not possible
+    if (d.channel === undefined) return;
+    const message = await d.channel?.send({ embeds: [embed] });
     d.editMessage(message, { embeds: [embed.setFooter(`ID: ${message.id}`)] });
   }
 
