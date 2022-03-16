@@ -437,7 +437,7 @@ deploy.handle("autorole stworz", async (d: deploy.SlashCommandInteraction) => {
 
 deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   if (d.message?.author.id !== d.guild?.ownerID) {
-    return d.respond({
+    return await d.respond({
       flags: deploy.InteractionResponseFlags.EPHEMERAL,
       content: "Nie jesteś właścicielem",
     });
@@ -457,7 +457,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       .channels[channel.id]
       .messages[msgID].get();
   } catch (_e) {
-    return d.respond({
+    return await d.respond({
       content: "Złe id menu",
     });
   }
@@ -479,7 +479,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   ) !== undefined;
 
   if (alreadyExists) {
-    return d.respond({
+    return await d.respond({
       content: "Przycisk z tą rolą już istnieje...",
     });
   }
@@ -487,7 +487,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   flattenedComponents.push(component);
 
   if (flattenedComponents.length > 25) {
-    return d.respond({
+    return await d.respond({
       content: "Nie można dodać więcej przyciskow...",
     });
   }
@@ -505,7 +505,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   await deploy.client.rest.api.channels[channel.id].messages[msgID]
     .patch({ embeds: message.embeds, components });
 
-  d.editResponse({
+  await d.editResponse({
     content: "Zrobione!",
   });
 });
