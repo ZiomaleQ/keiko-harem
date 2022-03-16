@@ -116,7 +116,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
     description: "Autorolowańsko",
     options: [
       {
-        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        type: "SUB_COMMAND",
         name: "dodaj",
         description: "Dodaj role do menu",
         options: [
@@ -135,7 +135,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
         ],
       },
       {
-        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        type: "SUB_COMMAND",
         name: "usun",
         description: "Usun role z menu",
         options: [
@@ -154,7 +154,7 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
         ],
       },
       {
-        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        type: "SUB_COMMAND",
         name: "stworz",
         description: "Stworz nowe menu",
         options: [
