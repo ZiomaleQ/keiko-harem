@@ -161,10 +161,6 @@ if (Deno.env.get("SYNC") === "TRUE") {
         },
       ],
     },
-    {
-      name: "zaktualizuj autorole",
-      type: "MESSAGE",
-    },
   ];
 
   if (commands.size != slashCommands.length) {
