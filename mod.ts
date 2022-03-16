@@ -400,7 +400,7 @@ deploy.handle("autorole stworz", async (d: deploy.SlashCommandInteraction) => {
   const embed = new deploy.Embed().setTitle(d.option<string>("tytuł"))
     .addField("Opis", d.option<string>("opis"));
 
-  if (d.option<deploy.InteractionChannel | undefined>("kanał") === undefined) {
+  if (d.option<deploy.InteractionChannel | undefined>("kanał") !== undefined) {
     const channel = d.option<deploy.InteractionChannel>("kanał");
 
     const message: deploy.Message = await deploy.client.rest.api
