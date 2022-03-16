@@ -3,171 +3,171 @@ import { genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
 
-if (Deno.env.get("SYNC") === "TRUE") {
-  const commands = await deploy.commands.all();
+// if (Deno.env.get("SYNC") === "TRUE") {
+const commands = await deploy.commands.all();
 
-  const slashCommands: deploy.ApplicationCommandPartial[] = [
-    {
-      name: "anime",
-      description: "Info a anime",
-      options: [
-        {
-          name: "nazwa",
-          description: "Nazwa anime którego szukasz",
-          type: "STRING",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "atak",
-      description: "Atakowańsko",
-      options: [
-        {
-          name: "lvl",
-          description: "Poziom postaci!",
-          type: "INTEGER",
-          minValue: 1,
-          required: true,
-        },
-        {
-          name: "modif",
-          description: "Modyfikator trafienia!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "dmg",
-          description: "Dodatkowe 'AD'!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "krytyczne",
-          description: "Szansa na kryta!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "wartosc-kryt",
-          description: "Mnożnik krytyka!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "dice",
-      description: "Losowanko",
-      options: [
-        {
-          name: "max",
-          description: "Maksymalna wartość",
-          type: "INTEGER",
-          required: true,
-        },
-        {
-          name: "min",
-          description: "Minimalna wartość",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "pancerz",
-      description: "Oblicz zmniejszenie obrażeń",
-      options: [
-        {
-          name: "pancerz",
-          description: "Ilość pancerza",
-          type: "INTEGER",
-          required: true,
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "unik",
-      description: "Unikańsko",
-      options: [
-        {
-          name: "unik",
-          description: "Wartość uniku",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "dmg",
-          description: "Obrażenia jakie dostajesz",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "pancerz",
-          description: "Pancerz postaci",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "autorole",
-      description: "Autorolowańsko",
-      options: [
-        {
-          type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
-          name: "dodaj",
-          description: "Dodaj role do menu",
-          options: [
-            {
-              type: "ROLE",
-              name: "rola",
-              description: "Rola jaką dodać",
-              required: true,
-            },
-          ],
-        },
-        {
-          type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
-          name: "usun",
-          description: "Usun role z menu",
-          options: [
-            {
-              type: "ROLE",
-              name: "rola",
-              description: "Rola jaką usunąć",
-              required: true,
-            },
-          ],
-        },
-        {
-          name: "tytuł",
-          description: "Tytuł wiadomości",
-          type: "STRING",
-          required: true,
-        },
-        {
-          name: "opis",
-          description: "Opis menu",
-          type: "STRING",
-          required: true,
-        },
-        {
-          name: "kanał",
-          description: "Kanał na który wysłać wiadomość",
-          type: "CHANNEL",
-          required: false,
-        },
-      ],
-    },
-  ];
+const slashCommands: deploy.ApplicationCommandPartial[] = [
+  {
+    name: "anime",
+    description: "Info a anime",
+    options: [
+      {
+        name: "nazwa",
+        description: "Nazwa anime którego szukasz",
+        type: "STRING",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "atak",
+    description: "Atakowańsko",
+    options: [
+      {
+        name: "lvl",
+        description: "Poziom postaci!",
+        type: "INTEGER",
+        minValue: 1,
+        required: true,
+      },
+      {
+        name: "modif",
+        description: "Modyfikator trafienia!",
+        type: "INTEGER",
+        minValue: 0,
+      },
+      {
+        name: "dmg",
+        description: "Dodatkowe 'AD'!",
+        type: "INTEGER",
+        minValue: 0,
+      },
+      {
+        name: "krytyczne",
+        description: "Szansa na kryta!",
+        type: "INTEGER",
+        minValue: 0,
+      },
+      {
+        name: "wartosc-kryt",
+        description: "Mnożnik krytyka!",
+        type: "INTEGER",
+        minValue: 0,
+      },
+    ],
+  },
+  {
+    name: "dice",
+    description: "Losowanko",
+    options: [
+      {
+        name: "max",
+        description: "Maksymalna wartość",
+        type: "INTEGER",
+        required: true,
+      },
+      {
+        name: "min",
+        description: "Minimalna wartość",
+        type: "INTEGER",
+        minValue: 0,
+      },
+    ],
+  },
+  {
+    name: "pancerz",
+    description: "Oblicz zmniejszenie obrażeń",
+    options: [
+      {
+        name: "pancerz",
+        description: "Ilość pancerza",
+        type: "INTEGER",
+        required: true,
+        minValue: 0,
+      },
+    ],
+  },
+  {
+    name: "unik",
+    description: "Unikańsko",
+    options: [
+      {
+        name: "unik",
+        description: "Wartość uniku",
+        type: "INTEGER",
+        minValue: 0,
+      },
+      {
+        name: "dmg",
+        description: "Obrażenia jakie dostajesz",
+        type: "INTEGER",
+        minValue: 0,
+      },
+      {
+        name: "pancerz",
+        description: "Pancerz postaci",
+        type: "INTEGER",
+        minValue: 0,
+      },
+    ],
+  },
+  {
+    name: "autorole",
+    description: "Autorolowańsko",
+    options: [
+      {
+        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        name: "dodaj",
+        description: "Dodaj role do menu",
+        options: [
+          {
+            type: "ROLE",
+            name: "rola",
+            description: "Rola jaką dodać",
+            required: true,
+          },
+        ],
+      },
+      {
+        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        name: "usun",
+        description: "Usun role z menu",
+        options: [
+          {
+            type: "ROLE",
+            name: "rola",
+            description: "Rola jaką usunąć",
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "tytuł",
+        description: "Tytuł wiadomości",
+        type: "STRING",
+        required: true,
+      },
+      {
+        name: "opis",
+        description: "Opis menu",
+        type: "STRING",
+        required: true,
+      },
+      {
+        name: "kanał",
+        description: "Kanał na który wysłać wiadomość",
+        type: "CHANNEL",
+        required: false,
+      },
+    ],
+  },
+];
 
-  if (commands.size != slashCommands.length) {
-    console.log("updated commands");
-    deploy.commands.bulkEdit(slashCommands);
-  }
-}
+// if (commands.size != slashCommands.length) {
+//   console.log("updated commands");
+deploy.commands.bulkEdit(slashCommands);
+// }
+// }
 
 deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   const req = fetch("https://graphql.anilist.co", {
