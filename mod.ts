@@ -501,6 +501,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       components: arr,
     });
   }
+  console.log({ embeds: message.embeds, components })
 
   await deploy.client.rest.api.channels[channel.id].messages[msgID]
     .patch({ embeds: message.embeds, components });
