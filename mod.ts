@@ -388,7 +388,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
 });
 
 deploy.handle("autorole stworz", async (d: deploy.SlashCommandInteraction) => {
-  if (d.message?.author.id === d.guild?.ownerID) {
+  if (d.message?.author.id !== d.guild?.ownerID) {
     return d.respond({
       flags: deploy.InteractionResponseFlags.EPHEMERAL,
       content: "Nie jesteś właścicielem",
