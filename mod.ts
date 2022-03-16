@@ -504,7 +504,10 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   console.log(message);
 
   await deploy.client.rest.api.channels[channel.id].messages[msgID]
-    .patch({ embeds: message.embeds, components });
+    .patch({
+      // embeds: message.embeds,
+      components,
+    });
 
   await d.editResponse({
     content: "Zrobione!",
