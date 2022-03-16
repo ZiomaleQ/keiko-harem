@@ -508,6 +508,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log(components)
+
   console.log("XD3");
 
   await deploy.client.rest.api.channels[channel.id].messages[message.id]
