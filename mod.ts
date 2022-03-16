@@ -126,6 +126,12 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
             description: "Rola jaką dodać",
             required: true,
           },
+          {
+            type: "STRING",
+            name: "wiadomosc",
+            description: "ID menu",
+            required: true,
+          },
         ],
       },
       {
@@ -139,25 +145,38 @@ const slashCommands: deploy.ApplicationCommandPartial[] = [
             description: "Rola jaką usunąć",
             required: true,
           },
+          {
+            type: "STRING",
+            name: "wiadomosc",
+            description: "ID menu",
+            required: true,
+          },
         ],
       },
       {
-        name: "tytuł",
-        description: "Tytuł wiadomości",
-        type: "STRING",
-        required: true,
-      },
-      {
-        name: "opis",
-        description: "Opis menu",
-        type: "STRING",
-        required: true,
-      },
-      {
-        name: "kanał",
-        description: "Kanał na który wysłać wiadomość",
-        type: "CHANNEL",
-        required: false,
+        type: deploy.ApplicationCommandOptionType.SUB_COMMAND,
+        name: "stworz",
+        description: "Stworz nowe menu",
+        options: [
+          {
+            name: "tytuł",
+            description: "Tytuł wiadomości",
+            type: "STRING",
+            required: true,
+          },
+          {
+            name: "opis",
+            description: "Opis menu",
+            type: "STRING",
+            required: true,
+          },
+          {
+            name: "kanał",
+            description: "Kanał na który wysłać wiadomość",
+            type: "CHANNEL",
+            required: false,
+          },
+        ],
       },
     ],
   },
@@ -368,7 +387,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
   }
 });
 
-deploy.handle("autorole", (d: deploy.SlashCommandInteraction) => {
+deploy.handle("autorole stworz", (d: deploy.SlashCommandInteraction) => {
   d.reply("XD");
 });
 
