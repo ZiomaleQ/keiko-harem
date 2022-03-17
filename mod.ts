@@ -538,6 +538,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       },
     );
   }
+  //A jebane deno
 });
 
 deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
