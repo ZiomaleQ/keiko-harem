@@ -1,4 +1,4 @@
-import { deploy, harmony } from "./deps.ts";
+import { deploy } from "./deps.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
@@ -443,62 +443,49 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  const client = new harmony.Client({ token: Deno.env.get("TOKEN") });
-
-  console.log("Miau")
+  const guild = d?.guild!;
 
   const msgID = d.option<string>("wiadomosc");
   // deno-lint-ignore no-explicit-any
   const role = d.option("rola") as any;
   const channel = d.option<deploy.InteractionChannel>("kanał");
 
-  d.defer();
+  const resolvedChannel = (await guild.channels.fetch(channel.id))!;
 
-  console.log("Miau1")
-
-
-  let message: harmony.Message;
-
-  const resolvedChannel = await (client.channels.fetch(channel.id));
-
-  console.log("Miau2")
-
-  try {
-    if (resolvedChannel?.isText()) {
-      const localMsg = await resolvedChannel.messages.fetch(
-        msgID,
-      ) as harmony.Message;
-      if (localMsg === undefined) throw Error();
-      message = localMsg!;
-    } else {
-      throw Error();
-    }
-  } catch (_e) {
+  if (!resolvedChannel.isText()) {
     return await d.respond({
-      content: "Zły kanał lub złe id menu",
+      flags: deploy.InteractionResponseFlags.EPHEMERAL,
+      content: "Zły kanał",
     });
   }
 
-  console.log("Miau3")
+  let msg;
 
+  try {
+    msg = await resolvedChannel.messages.fetch(msgID);
+  } catch (_e) {
+    return await d.respond({
+      flags: deploy.InteractionResponseFlags.EPHEMERAL,
+      content: "Złe id menu",
+    });
+  }
 
-  const component: deploy.ButtonComponent = {
+  d.defer();
+
+  const newButton: deploy.ButtonComponent = {
     type: deploy.MessageComponentType.Button,
     label: role.name,
     style: 1,
     customID: "a/" + role.id,
   };
 
-  const flattenedComponents: deploy.ButtonComponent[] = message.components
-    .flatMap((elt) =>
-      (elt as deploy.ActionRowComponent).components
-    ) as unknown as deploy.ButtonComponent[];
+  const flatComponents = msg.components.flatMap((elt) =>
+    (elt as deploy.ActionRowComponent).components
+  );
 
-  const alreadyExists = flattenedComponents.find((elt) =>
-    elt.customID === component.customID
+  const alreadyExists = flatComponents.find((elt) =>
+    (elt as deploy.ButtonComponent).customID === newButton.customID
   ) !== undefined;
-
-  console.log("Miau4")
 
   if (alreadyExists) {
     return await d.respond({
@@ -506,18 +493,16 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  flattenedComponents.push(component);
+  flatComponents.push(newButton);
 
-  if (flattenedComponents.length > 25) {
+  if (flatComponents.length > 25) {
     return await d.respond({
       content: "Nie można dodać więcej przyciskow...",
     });
   }
 
-  console.log("Miau5")
-
-  const splitted = chunk(flattenedComponents, 5);
-  const components: harmony.ActionRowComponent[] = [];
+  const splitted = chunk(flatComponents, 5);
+  const components: deploy.ActionRowComponent[] = [];
 
   for (const arr of splitted) {
     components.push({
@@ -526,9 +511,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  console.log("Ara ara")
-
-  message.edit({ embeds: message.embeds, components: components }).then(
+  msg.edit({ embeds: msg.embeds, components }).then(
     async () => {
       await d.editResponse({
         content: "Zrobione!",
@@ -539,6 +522,93 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       content: "Nie można zedytować wiadomości",
     });
   });
+
+  // console.log("Miau1");
+
+  // const client = new corddis.Client(Deno.env.get("TOKEN"));
+
+  // let message: corddis.Message;
+
+  // const guild = await client.guilds.get(d?.guild?.id ?? "");
+  // const resolvedChannel = await guild.channels.get(channel.id);
+
+  // console.log("Miau2");
+
+  // try {
+  //   if (resolvedChannel.data.type === 0) {
+  //     message = await (resolvedChannel as corddis.TextChannel).fetchMessage(
+  //       msgID,
+  //     );
+  //   } else {
+  //     throw Error();
+  //   }
+  // } catch (_e) {
+  //   return await d.respond({
+  //     content: "Zły kanał lub złe id menu",
+  //   });
+  // }
+
+  // console.log("Miau3");
+
+  // // const component: corddis.Button = {
+  // //   type: deploy.MessageComponentType.Button,
+  // //   label: role.name,
+  // //   style: 1,
+  // //   customID: "a/" + role.id,
+  // // };
+
+  // const component = new corddis.Button().label(role.name).id("a/" + role.id).end();
+
+  // // deno-lint-ignore no-explicit-any
+  // const flattenedComponents: any[] = message.data.components.flatMap((elt) =>
+  //   (elt as corddis.ActionRowComponent).components
+  // );
+
+  // const alreadyExists = flattenedComponents.find((elt) =>
+  //   elt.custom_id === component.custom_id
+  // ) !== undefined;
+
+  // console.log("Miau4");
+
+  // if (alreadyExists) {
+  //   return await d.respond({
+  //     content: "Przycisk z tą rolą już istnieje...",
+  //   });
+  // }
+
+  // flattenedComponents.push(component);
+
+  // if (flattenedComponents.length > 25) {
+  //   return await d.respond({
+  //     content: "Nie można dodać więcej przyciskow...",
+  //   });
+  // }
+
+  // console.log("Miau5");
+
+  // const splitted = chunk(flattenedComponents, 5);
+  // const components: harmony.ActionRowComponent[] = [];
+
+  // for (const arr of splitted) {
+  //   components.push({
+  //     type: deploy.MessageComponentType.ActionRow,
+  //     components: arr,
+  //   });
+  // }
+
+  // console.log("Ara ara");
+
+  // message.edit({ embeds: message.embeds, components: components }).then(
+  //   async () => {
+  //     await d.editResponse({
+  //       content: "Zrobione!",
+  //     });
+  //   },
+  // ).catch(async () => {
+  //   await d.respond({
+  //     content: "Nie można zedytować wiadomości",
+  //   });
+  // });
 });
 
 deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
