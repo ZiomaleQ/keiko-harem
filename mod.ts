@@ -517,7 +517,13 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   }
 
   try {
-    await resolvedChannel.send({ embeds: msg.embeds, components });
+    const embed = msg.embeds[0];
+
+    const newMsg = await resolvedChannel.send("Autorole!");
+    await newMsg.edit({
+      embeds: [embed.setFooter("ID: " + newMsg.id)],
+      components,
+    });
     await msg.delete();
 
     await d.editResponse({
