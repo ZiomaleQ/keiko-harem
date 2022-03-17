@@ -515,8 +515,6 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  console.log("JA PIERDOLE");
-
   try {
     await d.respond({
       content: "Zrobione!",
@@ -538,7 +536,6 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       },
     );
   }
-  //A jebane deno
 });
 
 deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
