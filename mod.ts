@@ -450,11 +450,12 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   const role = d.option("rola") as any;
   const channel = d.option<deploy.InteractionChannel>("kanał");
 
+  await d.defer();
+
   const resolvedChannel = (await guild.channels.fetch(channel.id))!;
 
   if (!resolvedChannel.isText()) {
     return await d.respond({
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
       content: "Zły kanał",
     });
   }
@@ -465,12 +466,9 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     msg = await resolvedChannel.messages.fetch(msgID);
   } catch (_e) {
     return await d.respond({
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
       content: "Złe id menu",
     });
   }
-
-  d.defer();
 
   const newButton: deploy.ButtonComponent = {
     type: deploy.MessageComponentType.Button,
