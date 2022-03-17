@@ -453,7 +453,6 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   await d.defer();
 
   const resolvedChannel = (await guild.channels.fetch(channel.id))!;
-  const member = await guild.me();
 
   if (!resolvedChannel.isText()) {
     return await d.respond({
@@ -471,7 +470,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  if (msg.author.id !== member.id) {
+  if (msg.author.id !== "622783718783844356") {
     return await d.respond({
       content: "To menu nie jest moje...",
     });
