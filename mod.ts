@@ -453,6 +453,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   await d.defer();
 
   const resolvedChannel = (await guild.channels.fetch(channel.id))!;
+  const member = await guild.me();
 
   if (!resolvedChannel.isText()) {
     return await d.respond({
@@ -467,6 +468,12 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   } catch (_e) {
     return await d.respond({
       content: "Złe id menu",
+    });
+  }
+
+  if (msg.author.id !== member.id) {
+    return await d.respond({
+      content: "To menu nie jest moje...",
     });
   }
 
@@ -509,104 +516,21 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
-  msg.edit({ embeds: msg.embeds, components }).then(
-    async () => {
-      await d.editResponse({
-        content: "Zrobione!",
-      });
-    },
-  ).catch(async () => {
-    await d.respond({
-      content: "Nie można zedytować wiadomości",
+  try {
+    await resolvedChannel.send({ embeds: msg.embeds, components });
+    await msg.delete();
+
+    await d.editResponse({
+      content: "Zrobione!",
     });
-  });
-
-  // console.log("Miau1");
-
-  // const client = new corddis.Client(Deno.env.get("TOKEN"));
-
-  // let message: corddis.Message;
-
-  // const guild = await client.guilds.get(d?.guild?.id ?? "");
-  // const resolvedChannel = await guild.channels.get(channel.id);
-
-  // console.log("Miau2");
-
-  // try {
-  //   if (resolvedChannel.data.type === 0) {
-  //     message = await (resolvedChannel as corddis.TextChannel).fetchMessage(
-  //       msgID,
-  //     );
-  //   } else {
-  //     throw Error();
-  //   }
-  // } catch (_e) {
-  //   return await d.respond({
-  //     content: "Zły kanał lub złe id menu",
-  //   });
-  // }
-
-  // console.log("Miau3");
-
-  // // const component: corddis.Button = {
-  // //   type: deploy.MessageComponentType.Button,
-  // //   label: role.name,
-  // //   style: 1,
-  // //   customID: "a/" + role.id,
-  // // };
-
-  // const component = new corddis.Button().label(role.name).id("a/" + role.id).end();
-
-  // // deno-lint-ignore no-explicit-any
-  // const flattenedComponents: any[] = message.data.components.flatMap((elt) =>
-  //   (elt as corddis.ActionRowComponent).components
-  // );
-
-  // const alreadyExists = flattenedComponents.find((elt) =>
-  //   elt.custom_id === component.custom_id
-  // ) !== undefined;
-
-  // console.log("Miau4");
-
-  // if (alreadyExists) {
-  //   return await d.respond({
-  //     content: "Przycisk z tą rolą już istnieje...",
-  //   });
-  // }
-
-  // flattenedComponents.push(component);
-
-  // if (flattenedComponents.length > 25) {
-  //   return await d.respond({
-  //     content: "Nie można dodać więcej przyciskow...",
-  //   });
-  // }
-
-  // console.log("Miau5");
-
-  // const splitted = chunk(flattenedComponents, 5);
-  // const components: harmony.ActionRowComponent[] = [];
-
-  // for (const arr of splitted) {
-  //   components.push({
-  //     type: deploy.MessageComponentType.ActionRow,
-  //     components: arr,
-  //   });
-  // }
-
-  // console.log("Ara ara");
-
-  // message.edit({ embeds: message.embeds, components: components }).then(
-  //   async () => {
-  //     await d.editResponse({
-  //       content: "Zrobione!",
-  //     });
-  //   },
-  // ).catch(async () => {
-  //   await d.respond({
-  //     content: "Nie można zedytować wiadomości",
-  //   });
-  // });
+  } catch (_e) {
+    await d.respond(
+      {
+        content:
+          `Nie mam uprawnienień do tego (usuwanie wiadomości, tworzenie nowych wiadomości na <#${resolvedChannel.id}>)`,
+      },
+    );
+  }
 });
 
 deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
