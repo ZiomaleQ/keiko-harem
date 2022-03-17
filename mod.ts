@@ -1,4 +1,4 @@
-import { deploy } from "./deps.ts";
+import { deploy, harmony } from "./deps.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 deploy.init({ env: true });
@@ -443,6 +443,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  const client = new harmony.Client({ token: Deno.env.get("TOKEN") });
+
   const msgID = d.option<string>("wiadomosc");
   // deno-lint-ignore no-explicit-any
   const role = d.option("rola") as any;
@@ -450,15 +452,23 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
 
   d.defer();
 
-  let message: deploy.Message;
+  let message: harmony.Message;
+
+  const resolvedChannel = await (client.channels.resolve(channel.id));
 
   try {
-    message = await deploy.client.rest.api
-      .channels[channel.id]
-      .messages[msgID].get();
+    if (resolvedChannel?.isText()) {
+      const localMsg = await resolvedChannel.messages.resolve(
+        msgID,
+      ) as harmony.Message;
+      if (localMsg === undefined) throw Error();
+      message = localMsg!;
+    } else {
+      throw Error();
+    }
   } catch (_e) {
     return await d.respond({
-      content: "Złe id menu",
+      content: "Zły kanał lub złe id menu",
     });
   }
 
@@ -493,7 +503,7 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
   }
 
   const splitted = chunk(flattenedComponents, 5);
-  const components = [];
+  const components: harmony.ActionRowComponent[] = [];
 
   for (const arr of splitted) {
     components.push({
@@ -501,16 +511,17 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       components: arr,
     });
   }
-  console.log(message);
 
-  await deploy.client.rest.api.channels[channel.id].messages[msgID]
-    .patch({
-      // embeds: message.embeds,
-      components,
+  message.edit({ embeds: message.embeds, components: components }).then(
+    async () => {
+      await d.editResponse({
+        content: "Zrobione!",
+      });
+    },
+  ).catch(async () => {
+    await d.respond({
+      content: "Nie można zedytować wiadomości",
     });
-
-  await d.editResponse({
-    content: "Zrobione!",
   });
 });
 
