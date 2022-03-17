@@ -459,13 +459,13 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
 
   let message: harmony.Message;
 
-  const resolvedChannel = await (client.channels.resolve(channel.id));
+  const resolvedChannel = await (client.channels.fetch(channel.id));
 
   console.log("Miau2")
 
   try {
     if (resolvedChannel?.isText()) {
-      const localMsg = await resolvedChannel.messages.resolve(
+      const localMsg = await resolvedChannel.messages.fetch(
         msgID,
       ) as harmony.Message;
       if (localMsg === undefined) throw Error();
