@@ -516,7 +516,13 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("JA PIERDOLE");
+
   try {
+    await d.respond({
+      content: "Zrobione!",
+    });
+
     const embed = msg.embeds[0];
 
     const newMsg = await resolvedChannel.send("Autorole!");
@@ -525,12 +531,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       components,
     });
     await msg.delete();
-
-    await d.editResponse({
-      content: "Zrobione!",
-    });
   } catch (_e) {
-    await d.respond(
+    await d.editResponse(
       {
         content:
           `Nie mam uprawnienień do tego (usuwanie wiadomości, tworzenie nowych wiadomości na <#${resolvedChannel.id}>)`,
