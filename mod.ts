@@ -512,6 +512,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("Ara ara")
+
   message.edit({ embeds: message.embeds, components: components }).then(
     async () => {
       await d.editResponse({
