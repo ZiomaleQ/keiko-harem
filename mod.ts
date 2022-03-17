@@ -445,6 +445,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
 
   const client = new harmony.Client({ token: Deno.env.get("TOKEN") });
 
+  console.log("Miau")
+
   const msgID = d.option<string>("wiadomosc");
   // deno-lint-ignore no-explicit-any
   const role = d.option("rola") as any;
@@ -452,9 +454,14 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
 
   d.defer();
 
+  console.log("Miau1")
+
+
   let message: harmony.Message;
 
   const resolvedChannel = await (client.channels.resolve(channel.id));
+
+  console.log("Miau2")
 
   try {
     if (resolvedChannel?.isText()) {
@@ -472,6 +479,9 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     });
   }
 
+  console.log("Miau3")
+
+
   const component: deploy.ButtonComponent = {
     type: deploy.MessageComponentType.Button,
     label: role.name,
@@ -488,6 +498,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
     elt.customID === component.customID
   ) !== undefined;
 
+  console.log("Miau4")
+
   if (alreadyExists) {
     return await d.respond({
       content: "Przycisk z tą rolą już istnieje...",
@@ -501,6 +513,8 @@ deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
       content: "Nie można dodać więcej przyciskow...",
     });
   }
+
+  console.log("Miau5")
 
   const splitted = chunk(flattenedComponents, 5);
   const components: harmony.ActionRowComponent[] = [];
