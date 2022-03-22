@@ -1,206 +1,219 @@
-import { deploy } from "./deps.ts";
+import { config } from "./config.ts";
+import {
+  ActionRowComponent,
+  ApplicationCommandPartial,
+  ButtonComponent,
+  ButtonStyle,
+  Client,
+  Embed,
+  InteractionChannel,
+  InteractionResponseFlags,
+  MessageComponentType,
+  Role,
+  SlashCommandInteraction,
+} from "./deps.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
-deploy.init({ env: true });
+const client = new Client({ token: config.TOKEN });
 
-// if (Deno.env.get("SYNC") === "TRUE") {
-//   const commands = await deploy.commands.all();
+client.on("ready", async () => {
+  const commands = await client.interactions.commands.all();
 
-// const slashCommands: deploy.ApplicationCommandPartial[] = [
-//   {
-//     name: "anime",
-//     description: "Info a anime",
-//     options: [
-//       {
-//         name: "nazwa",
-//         description: "Nazwa anime którego szukasz",
-//         type: "STRING",
-//         required: true,
-//       },
-//     ],
-//   },
-//   {
-//     name: "atak",
-//     description: "Atakowańsko",
-//     options: [
-//       {
-//         name: "lvl",
-//         description: "Poziom postaci!",
-//         type: "INTEGER",
-//         minValue: 1,
-//         required: true,
-//       },
-//       {
-//         name: "modif",
-//         description: "Modyfikator trafienia!",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//       {
-//         name: "dmg",
-//         description: "Dodatkowe 'AD'!",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//       {
-//         name: "krytyczne",
-//         description: "Szansa na kryta!",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//       {
-//         name: "wartosc-kryt",
-//         description: "Mnożnik krytyka!",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//     ],
-//   },
-//   {
-//     name: "dice",
-//     description: "Losowanko",
-//     options: [
-//       {
-//         name: "max",
-//         description: "Maksymalna wartość",
-//         type: "INTEGER",
-//         required: true,
-//       },
-//       {
-//         name: "min",
-//         description: "Minimalna wartość",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//     ],
-//   },
-//   {
-//     name: "pancerz",
-//     description: "Oblicz zmniejszenie obrażeń",
-//     options: [
-//       {
-//         name: "pancerz",
-//         description: "Ilość pancerza",
-//         type: "INTEGER",
-//         required: true,
-//         minValue: 0,
-//       },
-//     ],
-//   },
-//   {
-//     name: "unik",
-//     description: "Unikańsko",
-//     options: [
-//       {
-//         name: "unik",
-//         description: "Wartość uniku",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//       {
-//         name: "dmg",
-//         description: "Obrażenia jakie dostajesz",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//       {
-//         name: "pancerz",
-//         description: "Pancerz postaci",
-//         type: "INTEGER",
-//         minValue: 0,
-//       },
-//     ],
-//   },
-//   {
-//     name: "autorole",
-//     description: "Autorolowańsko",
-//     options: [
-//       {
-//         type: "SUB_COMMAND",
-//         name: "dodaj",
-//         description: "Dodaj role do menu",
-//         options: [
-//           {
-//             type: "ROLE",
-//             name: "rola",
-//             description: "Rola jaką dodać",
-//             required: true,
-//           },
-//           {
-//             type: "STRING",
-//             name: "wiadomosc",
-//             description: "ID menu",
-//             required: true,
-//           },
-//           {
-//             name: "kanał",
-//             description: "Kanał na którym znajduje się menu",
-//             type: "CHANNEL",
-//             required: true,
-//           },
-//         ],
-//       },
-//       {
-//         type: "SUB_COMMAND",
-//         name: "usun",
-//         description: "Usun role z menu",
-//         options: [
-//           {
-//             type: "ROLE",
-//             name: "rola",
-//             description: "Rola jaką usunąć",
-//             required: true,
-//           },
-//           {
-//             type: "STRING",
-//             name: "wiadomosc",
-//             description: "ID menu",
-//             required: true,
-//           },
-//           {
-//             name: "kanał",
-//             description: "Kanał na którym znajduje się menu",
-//             type: "CHANNEL",
-//             required: true,
-//           },
-//         ],
-//       },
-//       {
-//         type: "SUB_COMMAND",
-//         name: "stworz",
-//         description: "Stworz nowe menu",
-//         options: [
-//           {
-//             name: "tytuł",
-//             description: "Tytuł wiadomości",
-//             type: "STRING",
-//             required: true,
-//           },
-//           {
-//             name: "opis",
-//             description: "Opis menu",
-//             type: "STRING",
-//             required: true,
-//           },
-//           {
-//             name: "kanał",
-//             description: "Kanał na który wysłać wiadomość",
-//             type: "CHANNEL",
-//             required: false,
-//           },
-//         ],
-//       },
-//     ],
-//   },
-// ];
+  const slashCommands: ApplicationCommandPartial[] = [
+    {
+      name: "anime",
+      description: "Info a anime",
+      options: [
+        {
+          name: "nazwa",
+          description: "Nazwa anime którego szukasz",
+          type: "STRING",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "atak",
+      description: "Atakowańsko",
+      options: [
+        {
+          name: "lvl",
+          description: "Poziom postaci!",
+          type: "INTEGER",
+          minValue: 1,
+          required: true,
+        },
+        {
+          name: "modif",
+          description: "Modyfikator trafienia!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "dmg",
+          description: "Dodatkowe 'AD'!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "krytyczne",
+          description: "Szansa na kryta!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "wartosc-kryt",
+          description: "Mnożnik krytyka!",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "dice",
+      description: "Losowanko",
+      options: [
+        {
+          name: "max",
+          description: "Maksymalna wartość",
+          type: "INTEGER",
+          required: true,
+        },
+        {
+          name: "min",
+          description: "Minimalna wartość",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "pancerz",
+      description: "Oblicz zmniejszenie obrażeń",
+      options: [
+        {
+          name: "pancerz",
+          description: "Ilość pancerza",
+          type: "INTEGER",
+          required: true,
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "unik",
+      description: "Unikańsko",
+      options: [
+        {
+          name: "unik",
+          description: "Wartość uniku",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "dmg",
+          description: "Obrażenia jakie dostajesz",
+          type: "INTEGER",
+          minValue: 0,
+        },
+        {
+          name: "pancerz",
+          description: "Pancerz postaci",
+          type: "INTEGER",
+          minValue: 0,
+        },
+      ],
+    },
+    {
+      name: "autorole",
+      description: "Autorolowańsko",
+      options: [
+        {
+          type: "SUB_COMMAND",
+          name: "dodaj",
+          description: "Dodaj role do menu",
+          options: [
+            {
+              type: "ROLE",
+              name: "rola",
+              description: "Rola jaką dodać",
+              required: true,
+            },
+            {
+              type: "STRING",
+              name: "wiadomosc",
+              description: "ID menu",
+              required: true,
+            },
+            {
+              name: "kanał",
+              description: "Kanał na którym znajduje się menu",
+              type: "CHANNEL",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "usun",
+          description: "Usun role z menu",
+          options: [
+            {
+              type: "ROLE",
+              name: "rola",
+              description: "Rola jaką usunąć",
+              required: true,
+            },
+            {
+              type: "STRING",
+              name: "wiadomosc",
+              description: "ID menu",
+              required: true,
+            },
+            {
+              name: "kanał",
+              description: "Kanał na którym znajduje się menu",
+              type: "CHANNEL",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "stworz",
+          description: "Stworz nowe menu",
+          options: [
+            {
+              name: "tytuł",
+              description: "Tytuł wiadomości",
+              type: "STRING",
+              required: true,
+            },
+            {
+              name: "opis",
+              description: "Opis menu",
+              type: "STRING",
+              required: true,
+            },
+            {
+              name: "kanał",
+              description: "Kanał na który wysłać wiadomość",
+              type: "CHANNEL",
+              required: false,
+            },
+          ],
+        },
+      ],
+    },
+  ];
 
-// if (commands.size != slashCommands.length) {
-//   console.log("updated commands");
-// deploy.commands.bulkEdit(slashCommands);
-//   }
-// }
+  if (commands.size != slashCommands.length) {
+    console.log("updated commands");
+    client.interactions.commands.bulkEdit(slashCommands);
+  }
+});
 
-deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
+client.interactions.handle("anime", async (d: SlashCommandInteraction) => {
   const req = fetch("https://graphql.anilist.co", {
     headers: {
       "Content-Type": "application/json",
@@ -225,7 +238,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
 
   const data = res.data.Media;
 
-  const embed = new deploy.Embed().setTitle("Bonjour!").addField(
+  const embed = new Embed().setTitle("Bonjour!").addField(
     "Tytuł:",
     data.title.english ?? data.title.romaji,
     true,
@@ -257,7 +270,7 @@ deploy.handle("anime", async (d: deploy.SlashCommandInteraction) => {
   });
 });
 
-deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
+client.interactions.handle("atak", (d: SlashCommandInteraction) => {
   const okay = genRandom(0, 40) + ~~d.option<number>("modif");
   const lvl = d.option<number>("lvl") - 1;
   let dmg = genRandom(0, lvl * 5) + lvl * 10 + ~~d.option<number>("dmg") + 30;
@@ -268,7 +281,7 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
 
   if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
 
-  const embed = new deploy.Embed().setTitle("No siemka");
+  const embed = new Embed().setTitle("No siemka");
 
   if (okay >= 15) {
     embed.addField(
@@ -294,12 +307,12 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
     embeds: [embed],
     components: [
       {
-        type: deploy.MessageComponentType.ActionRow,
+        type: MessageComponentType.ActionRow,
         components: [
           {
-            type: deploy.MessageComponentType.Button,
+            type: MessageComponentType.Button,
             label: "Jeszcze raz",
-            style: deploy.ButtonStyle.PRIMARY,
+            style: ButtonStyle.PRIMARY,
             customID: "atak/r",
           },
         ],
@@ -308,13 +321,13 @@ deploy.handle("atak", (d: deploy.SlashCommandInteraction) => {
   });
 });
 
-deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
+client.interactions.handle("dice", (d: SlashCommandInteraction) => {
   const max = Math.abs(d.option<number>("max"));
   const min = Math.abs(~~d.option<number>("min"));
 
   return d.respond({
     embeds: [
-      new deploy.Embed().setTitle("No siemka").addField(
+      new Embed().setTitle("No siemka").addField(
         "Informacje:",
         `Wylosowałam: __***\`${genRandom(min, max)}\`***__.`,
       ).setColor("#00ff00"),
@@ -322,12 +335,12 @@ deploy.handle("dice", (d: deploy.SlashCommandInteraction) => {
   });
 });
 
-deploy.handle("pancerz", (d: deploy.SlashCommandInteraction) => {
+client.interactions.handle("pancerz", (d: SlashCommandInteraction) => {
   const pancerz = d.option<number>("pancerz");
 
   return d.respond({
     embeds: [
-      new deploy.Embed().setTitle("No heja").addField(
+      new Embed().setTitle("No heja").addField(
         "Redukcja obrażeń:",
         `${Math.floor(100 / (100 + pancerz) * 100)}%`,
       ),
@@ -335,7 +348,7 @@ deploy.handle("pancerz", (d: deploy.SlashCommandInteraction) => {
   });
 });
 
-deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
+client.interactions.handle("unik", (d: SlashCommandInteraction) => {
   const snek = ~~d.option<number>("unik");
   let dmg = ~~d.option<number>("dmg");
   const armor = ~~d.option<number>("pancerz");
@@ -351,7 +364,7 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
     }
     d.respond({
       embeds: [
-        new deploy.Embed().setTitle("No siemka").addField(
+        new Embed().setTitle("No siemka").addField(
           "Informacje:",
           `[${
             Math.floor(okay / 2.5)
@@ -362,12 +375,12 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
       ],
       components: [
         {
-          type: deploy.MessageComponentType.ActionRow,
+          type: MessageComponentType.ActionRow,
           components: [
             {
-              type: deploy.MessageComponentType.Button,
+              type: MessageComponentType.Button,
               label: "Jeszcze raz",
-              style: deploy.ButtonStyle.PRIMARY,
+              style: ButtonStyle.PRIMARY,
               customID: "unik/r",
             },
           ],
@@ -377,19 +390,19 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
   } else {
     d.respond({
       embeds: [
-        new deploy.Embed().setTitle("No siemka").addField(
+        new Embed().setTitle("No siemka").addField(
           "Informacje:",
           `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
         ).setColor("#00ff00").setFooter(`${snek}|${dmg}|${armor}`),
       ],
       components: [
         {
-          type: deploy.MessageComponentType.ActionRow,
+          type: MessageComponentType.ActionRow,
           components: [
             {
-              type: deploy.MessageComponentType.Button,
+              type: MessageComponentType.Button,
               label: "Jeszcze raz",
-              style: deploy.ButtonStyle.PRIMARY,
+              style: ButtonStyle.PRIMARY,
               customID: "unik/r",
             },
           ],
@@ -399,150 +412,158 @@ deploy.handle("unik", (d: deploy.SlashCommandInteraction) => {
   }
 });
 
-deploy.handle("autorole stworz", async (d: deploy.SlashCommandInteraction) => {
-  if (d.message?.author.id !== d.guild?.ownerID) {
-    return d.respond({
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
-      content: "Nie jesteś właścicielem",
-    });
-  }
+client.interactions.handle(
+  "autorole stworz",
+  async (d: SlashCommandInteraction) => {
+    if (d.message?.author.id !== d.guild?.ownerID) {
+      return d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
 
-  d.defer();
+    d.defer();
 
-  const embed = new deploy.Embed().setTitle(d.option<string>("tytuł"))
-    .addField("Opis", d.option<string>("opis"));
+    const embed = new Embed().setTitle(d.option<string>("tytuł"))
+      .addField("Opis", d.option<string>("opis"));
 
-  if (d.option<deploy.InteractionChannel | undefined>("kanał") !== undefined) {
-    const channel = d.option<deploy.InteractionChannel>("kanał");
+    if (d.option<InteractionChannel | undefined>("kanał") !== undefined) {
+      const channel = d.option<InteractionChannel>("kanał");
 
-    const message: deploy.Message = await deploy.client.rest.api
-      .channels[channel.id].messages.post({ embeds: [embed] });
+      const message = await client.channels.sendMessage(channel.id, {
+        embeds: [embed],
+      });
 
-    await deploy.client.rest.api.channels[channel.id].messages[message.id]
-      .patch({ embeds: [embed.setFooter(`ID: ${message.id}`)] });
-  } else {
-    //Won't be empty string
-    const channelID = d.channel?.id ?? "";
-    const message: deploy.Message = await deploy.client.rest.api
-      .channels[channelID].messages.post({ embeds: [embed] });
+      await message.edit({ embeds: [embed.setFooter(`ID: ${message.id}`)] });
+    } else {
+      //Won't be empty string
+      const channelID = d.channel?.id ?? "";
 
-    await deploy.client.rest.api.channels[channelID].messages[message.id]
-      .patch({ embeds: [embed.setFooter(`ID: ${message.id}`)] });
-  }
+      const message = await client.channels.sendMessage(channelID, {
+        embeds: [embed],
+      });
 
-  d.editResponse({
-    content: "Zrobione!",
-  });
-});
+      await message.edit({ embeds: [embed.setFooter(`ID: ${message.id}`)] });
+    }
 
-deploy.handle("autorole dodaj", async (d: deploy.SlashCommandInteraction) => {
-  if (d.message?.author.id !== d.guild?.ownerID) {
-    return await d.respond({
-      flags: deploy.InteractionResponseFlags.EPHEMERAL,
-      content: "Nie jesteś właścicielem",
-    });
-  }
-
-  const guild = d?.guild!;
-
-  const msgID = d.option<string>("wiadomosc");
-  // deno-lint-ignore no-explicit-any
-  const role = d.option("rola") as any;
-  const channel = d.option<deploy.InteractionChannel>("kanał");
-
-  await d.defer();
-
-  const resolvedChannel = (await guild.channels.fetch(channel.id))!;
-
-  if (!resolvedChannel.isText()) {
-    return await d.respond({
-      content: "Zły kanał",
-    });
-  }
-
-  let msg;
-
-  try {
-    msg = await resolvedChannel.messages.fetch(msgID);
-  } catch (_e) {
-    return await d.respond({
-      content: "Złe id menu",
-    });
-  }
-
-  if (msg.author.id !== "622783718783844356") {
-    return await d.respond({
-      content: "To menu nie jest moje...",
-    });
-  }
-
-  const newButton: deploy.ButtonComponent = {
-    type: deploy.MessageComponentType.Button,
-    label: role.name,
-    style: 1,
-    customID: "a/" + role.id,
-  };
-
-  const flatComponents = msg.components.flatMap((elt) =>
-    (elt as deploy.ActionRowComponent).components
-  );
-
-  const alreadyExists = flatComponents.find((elt) =>
-    (elt as deploy.ButtonComponent).customID === newButton.customID
-  ) !== undefined;
-
-  if (alreadyExists) {
-    return await d.respond({
-      content: "Przycisk z tą rolą już istnieje...",
-    });
-  }
-
-  flatComponents.push(newButton);
-
-  if (flatComponents.length > 25) {
-    return await d.respond({
-      content: "Nie można dodać więcej przyciskow...",
-    });
-  }
-
-  const splitted = chunk(flatComponents, 5);
-  const components: deploy.ActionRowComponent[] = [];
-
-  for (const arr of splitted) {
-    components.push({
-      type: deploy.MessageComponentType.ActionRow,
-      components: arr,
-    });
-  }
-
-  try {
-    await d.respond({
+    d.editResponse({
       content: "Zrobione!",
     });
+  },
+);
 
-    const embed = msg.embeds[0];
+client.interactions.handle(
+  "autorole dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.message?.author.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
 
-    const newMsg = await resolvedChannel.send("Autorole!");
-    await newMsg.edit({
-      embeds: [embed.setFooter("ID: " + newMsg.id)],
-      components,
-    });
-    await msg.delete();
-  } catch (_e) {
-    await d.editResponse(
-      {
-        content:
-          `Nie mam uprawnienień do tego (usuwanie wiadomości, tworzenie nowych wiadomości na <#${resolvedChannel.id}>)`,
-      },
+    const guild = d?.guild!;
+
+    const msgID = d.option<string>("wiadomosc");
+
+    const role = d.option<Role>("rola");
+    const channel = d.option<InteractionChannel>("kanał");
+
+    await d.defer();
+
+    const resolvedChannel = (await guild.channels.fetch(channel.id))!;
+
+    if (!resolvedChannel.isText()) {
+      return await d.respond({
+        content: "Zły kanał",
+      });
+    }
+
+    let msg;
+
+    try {
+      msg = await resolvedChannel.messages.fetch(msgID);
+    } catch (_e) {
+      return await d.respond({
+        content: "Złe id menu",
+      });
+    }
+
+    if (msg.author.id !== "622783718783844356") {
+      return await d.respond({
+        content: "To menu nie jest moje...",
+      });
+    }
+
+    const newButton: ButtonComponent = {
+      type: MessageComponentType.Button,
+      label: role.name,
+      style: 1,
+      customID: "a/" + role.id,
+    };
+
+    const flatComponents = msg.components.flatMap((elt) =>
+      (elt as ActionRowComponent).components
     );
-  }
-});
 
-deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
-  d.reply("XD2");
-});
+    const alreadyExists =
+      flatComponents.find((elt) =>
+        (elt as ButtonComponent).customID === newButton.customID
+      ) !== undefined;
 
-deploy.client.on("interaction", (i) => {
+    if (alreadyExists) {
+      return await d.respond({
+        content: "Przycisk z tą rolą już istnieje...",
+      });
+    }
+
+    flatComponents.push(newButton);
+
+    if (flatComponents.length > 25) {
+      return await d.respond({
+        content: "Nie można dodać więcej przyciskow...",
+      });
+    }
+
+    const splitted = chunk(flatComponents, 5);
+    const components: ActionRowComponent[] = [];
+
+    for (const arr of splitted) {
+      components.push({
+        type: MessageComponentType.ActionRow,
+        components: arr,
+      });
+    }
+
+    try {
+      await d.respond({
+        content: "Zrobione!",
+      });
+
+      const embed = msg.embeds[0];
+
+      const newMsg = await resolvedChannel.send("Autorole!");
+      await newMsg.edit({
+        embeds: [embed.setFooter("ID: " + newMsg.id)],
+        components,
+      });
+      await msg.delete();
+    } catch (_e) {
+      await d.editResponse(
+        {
+          content:
+            `Nie mam uprawnienień do tego (usuwanie wiadomości, tworzenie nowych wiadomości na <#${resolvedChannel.id}>)`,
+        },
+      );
+    }
+  },
+);
+
+// deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
+//   d.reply("XD2");
+// });
+
+client.on("interactionCreate", (i) => {
   if (!i.isMessageComponent()) return;
 
   if (i.data.custom_id === "atak/r") {
@@ -560,7 +581,7 @@ deploy.client.on("interaction", (i) => {
 
     if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
 
-    const embed = new deploy.Embed().setTitle("No siemka");
+    const embed = new Embed().setTitle("No siemka");
 
     if (okay >= 15) {
       embed.addField(
@@ -578,12 +599,12 @@ deploy.client.on("interaction", (i) => {
       embeds: [embed],
       components: [
         {
-          type: deploy.MessageComponentType.ActionRow,
+          type: MessageComponentType.ActionRow,
           components: [
             {
-              type: deploy.MessageComponentType.Button,
+              type: MessageComponentType.Button,
               label: "Jeszcze raz",
-              style: deploy.ButtonStyle.PRIMARY,
+              style: ButtonStyle.PRIMARY,
               customID: "atak/r",
             },
           ],
@@ -612,7 +633,7 @@ deploy.client.on("interaction", (i) => {
       }
       return i.respond({
         embeds: [
-          new deploy.Embed().setTitle("No siemka").addField(
+          new Embed().setTitle("No siemka").addField(
             "Informacje:",
             `[${
               Math.floor(okay / 2.5)
@@ -623,12 +644,12 @@ deploy.client.on("interaction", (i) => {
         ],
         components: [
           {
-            type: deploy.MessageComponentType.ActionRow,
+            type: MessageComponentType.ActionRow,
             components: [
               {
-                type: deploy.MessageComponentType.Button,
+                type: MessageComponentType.Button,
                 label: "Jeszcze raz",
-                style: deploy.ButtonStyle.PRIMARY,
+                style: ButtonStyle.PRIMARY,
                 customID: "unik/r",
               },
             ],
@@ -638,19 +659,19 @@ deploy.client.on("interaction", (i) => {
     } else {
       return i.respond({
         embeds: [
-          new deploy.Embed().setTitle("No siemka").addField(
+          new Embed().setTitle("No siemka").addField(
             "Informacje:",
             `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
           ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text),
         ],
         components: [
           {
-            type: deploy.MessageComponentType.ActionRow,
+            type: MessageComponentType.ActionRow,
             components: [
               {
-                type: deploy.MessageComponentType.Button,
+                type: MessageComponentType.Button,
                 label: "Jeszcze raz",
-                style: deploy.ButtonStyle.PRIMARY,
+                style: ButtonStyle.PRIMARY,
                 customID: "unik/r",
               },
             ],
