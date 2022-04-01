@@ -4,7 +4,7 @@ import {
   ApplicationCommandPartial,
   ButtonComponent,
   ButtonStyle,
-  Client,
+  CommandClient,
   Embed,
   InteractionChannel,
   InteractionResponseFlags,
@@ -12,9 +12,12 @@ import {
   Role,
   SlashCommandInteraction,
 } from "./deps.ts";
+import { RolePlayExtension } from "./extensions/roleplay/mod.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
-const client = new Client({ token: config.TOKEN });
+const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
+
+client.extensions.load(RolePlayExtension)
 
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all();
