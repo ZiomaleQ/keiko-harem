@@ -6,6 +6,7 @@ import {
   ButtonStyle,
   CommandClient,
   Embed,
+  Intents,
   InteractionChannel,
   InteractionResponseFlags,
   MessageComponentType,
@@ -17,7 +18,7 @@ import { chunk, genRandom, graphql } from "./utils.ts";
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
 
-client.extensions.load(RolePlayExtension)
+client.extensions.load(RolePlayExtension);
 
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all();
@@ -214,6 +215,8 @@ client.on("ready", async () => {
     console.log("updated commands");
     client.interactions.commands.bulkEdit(slashCommands);
   }
+
+  console.log("Hi, I'm " + client.user?.tag);
 });
 
 client.interactions.handle("anime", async (d: SlashCommandInteraction) => {
@@ -684,3 +687,6 @@ client.on("interactionCreate", (i) => {
     }
   }
 });
+
+client.on("debug", console.log);
+await client.connect(undefined, Intents.NonPrivileged);

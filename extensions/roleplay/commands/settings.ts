@@ -1,18 +1,11 @@
-import { Command, CommandContext } from "../../../deps.ts";
-import { getOrCreateGuild } from "../utils.ts";
+import { Command } from "../../../deps.ts";
+import { RolePlayContext } from "../mod.ts";
 
-export class SettingsCommands extends Command {
+export class SettingsCommand extends Command {
   name = "settings";
   guildOnly = true;
 
-  async execute(ctx: CommandContext) {
-    const guild = ctx.guild!;
-    const guildData = await getOrCreateGuild(guild.id, {
-      guild: guild.id,
-      startingMoney: 0,
-      xpPerLevel: 0,
-      firstLevelXP: 0,
-      addons: "",
-    });
+  execute(ctx: RolePlayContext) {
+    ctx.message.reply({ content: JSON.stringify(ctx.guildData) });
   }
 }

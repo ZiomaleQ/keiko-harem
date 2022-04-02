@@ -54,7 +54,7 @@ async function fetchData<T extends any>(
   body: string | FormData | null = null,
   headers: Record<string, string> = {},
 ): Promise<T> {
-  headers["Content-Type"] = "application/json";
+  headers["accept"] = "application/json";
 
   const response = await performReq(
     `http://${config.NOCO_DB.SERVER}:${config.NOCO_DB.PORT}${path}`,
@@ -70,7 +70,7 @@ async function fetchData<T extends any>(
 
   if (response.status >= 400) throw Error(await response.text());
 
-  if (response.headers.get("content-length")) {
+  if (+(response.headers.get("content-length") ?? 0) === 0) {
     // deno-lint-ignore no-explicit-any
     return null as any;
   } else {
