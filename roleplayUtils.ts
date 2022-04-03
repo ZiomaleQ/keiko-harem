@@ -209,9 +209,6 @@ async function fetchData<T extends any>(
   body: string | FormData | null = null,
   headers: Record<string, string> = {},
 ): Promise<T> {
-
-console.log(body)
-
   const response = await fetch(
     `http://${config.NOCO_DB.SERVER}:${config.NOCO_DB.PORT}/nc/${config.NOCO_DB.DB_NAME}/api/v1${path}`,
     {
@@ -220,6 +217,7 @@ console.log(body)
       headers: {
         ...headers,
         "accept": "application/json",
+        "Content-Type": "application/json",
         "xc-token": config.NOCO_DB.AUTH_TOKEN,
       },
     },
