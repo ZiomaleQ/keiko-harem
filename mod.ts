@@ -12,13 +12,16 @@ import {
   MessageComponentType,
   Role,
   SlashCommandInteraction,
+  User,
 } from "./deps.ts";
-import { RolePlayExtension } from "./extensions/roleplay/mod.ts";
+import {
+  getMoney,
+  getMoneyOrCreate,
+  getMoneyOrDefault,
+} from "./roleplayUtils.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
-
-client.extensions.load(RolePlayExtension);
 
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all();
@@ -206,6 +209,127 @@ client.on("ready", async () => {
               required: false,
             },
           ],
+        },
+      ],
+    },
+    {
+      name: "money",
+      description: "Zarządzanie pieniędzmi!",
+      options: [
+        {
+          type: "SUB_COMMAND",
+          name: "dodaj",
+          description: "Druknij komuś pieniążki!",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu dać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu dać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "zabierz",
+          description: "Zabierz komuś pieniążki!",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu zabrać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu zabrać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "reset",
+          description: "Przywróć wartości do ustawień początkowych",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu zresetować?",
+              type: "USER",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "stworz",
+          description: "Stworz konto dla bohatera",
+          options: [
+            {
+              name: "postac",
+              description: "Bohater dla jakiego konto założyć",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "usun",
+          description: "Usuń konto bohatera",
+          options: [
+            {
+              name: "postac",
+              description: "Bohater dla jakiego konto usunąć",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "daj",
+          description: "Daj komuś pieniądze",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu dać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu dać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "stan",
+          description: "Sprawdź stan konta",
+          options: [
+            {
+              name: "osoba",
+              description: "Kogo konto sprawdzić?",
+              type: "USER",
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "tabela",
+          description: "Zobacz tabelkę",
         },
       ],
     },
@@ -421,7 +545,7 @@ client.interactions.handle("unik", (d: SlashCommandInteraction) => {
 client.interactions.handle(
   "autorole stworz",
   async (d: SlashCommandInteraction) => {
-    if (d.message?.author.id !== d.guild?.ownerID) {
+    if (d.user.id !== d.guild?.ownerID) {
       return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
         content: "Nie jesteś właścicielem",
@@ -461,7 +585,7 @@ client.interactions.handle(
 client.interactions.handle(
   "autorole dodaj",
   async (d: SlashCommandInteraction) => {
-    if (d.message?.author.id !== d.guild?.ownerID) {
+    if (d.user.id !== d.guild?.ownerID) {
       return await d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
         content: "Nie jesteś właścicielem",
@@ -542,18 +666,113 @@ client.interactions.handle(
     }
 
     try {
-      await d.respond({
+      await d.editResponse({
         content: "Zrobione!",
       });
 
-      const embed = msg.embeds[0];
-
-      const newMsg = await resolvedChannel.send("Autorole!");
-      await newMsg.edit({
-        embeds: [embed.setFooter("ID: " + newMsg.id)],
+      msg.edit({
+        content: msg.content,
+        embeds: msg.embeds,
         components,
       });
-      await msg.delete();
+    } catch (e) {
+      console.log(e);
+      await d.editResponse(
+        {
+          content:
+            `Nie mam uprawnienień do tego (usuwanie wiadomości, tworzenie nowych wiadomości na <#${resolvedChannel.id}>)`,
+        },
+      );
+    }
+  },
+);
+
+client.interactions.handle(
+  "autorole usun",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const guild = d?.guild!;
+
+    const msgID = d.option<string>("wiadomosc");
+
+    const role = d.option<Role>("rola");
+    const channel = d.option<InteractionChannel>("kanał");
+
+    await d.defer();
+
+    const resolvedChannel = (await guild.channels.fetch(channel.id))!;
+
+    if (!resolvedChannel.isText()) {
+      return await d.respond({
+        content: "Zły kanał",
+      });
+    }
+
+    let msg;
+
+    try {
+      msg = await resolvedChannel.messages.fetch(msgID);
+    } catch (_e) {
+      return await d.respond({
+        content: "Złe id menu",
+      });
+    }
+
+    if (msg.author.id !== "622783718783844356") {
+      return await d.respond({
+        content: "To menu nie jest moje...",
+      });
+    }
+
+    const newButton: ButtonComponent = {
+      type: MessageComponentType.Button,
+      label: role.name,
+      style: 1,
+      customID: "a/" + role.id,
+    };
+
+    const flatComponents = msg.components.flatMap((elt) =>
+      (elt as ActionRowComponent).components
+    );
+
+    const buttonIndex = flatComponents.findIndex((elt) =>
+      (elt as ButtonComponent).customID === newButton.customID
+    );
+
+    if (buttonIndex === -1) {
+      return await d.respond({
+        content: "W menu nie ma takiej roli...",
+      });
+    }
+
+    flatComponents.splice(buttonIndex, 1);
+
+    const splitted = chunk(flatComponents, 5);
+    const components: ActionRowComponent[] = [];
+
+    for (const arr of splitted) {
+      components.push({
+        type: MessageComponentType.ActionRow,
+        components: arr,
+      });
+    }
+
+    try {
+      await d.editResponse({
+        content: "Zrobione!",
+      });
+
+      msg.edit({
+        content: msg.content,
+        embeds: msg.embeds,
+        components,
+      });
     } catch (_e) {
       await d.editResponse(
         {
@@ -565,11 +784,148 @@ client.interactions.handle(
   },
 );
 
-// deploy.handle("autorole usun", (d: deploy.SlashCommandInteraction) => {
-//   d.reply("XD2");
-// });
+client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
+  }
 
-client.on("interactionCreate", (i) => {
+  const anotherUser = d.option<User | undefined>("osoba");
+  const money = await getMoneyOrCreate(
+    anotherUser?.id ?? d.user.id,
+    d.guild.id,
+  );
+
+  d.respond({ content: "```json\n" + JSON.stringify(money) + "```" });
+});
+
+/*
+
+    {
+      name: "money",
+      description: "Zarządzanie pieniędzmi!",
+      options: [
+        {
+          type: "SUB_COMMAND",
+          name: "dodaj",
+          description: "Druknij komuś pieniążki!",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu dać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu dać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "zabierz",
+          description: "Zabierz komuś pieniążki!",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu zabrać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu zabrać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "reset",
+          description: "Przywróć wartości do ustawień początkowych",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu zresetować?",
+              type: "USER",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "stworz",
+          description: "Stworz konto dla bohatera",
+          options: [
+            {
+              name: "postac",
+              description: "Bohater dla jakiego konto założyć",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "usun",
+          description: "Usuń konto bohatera",
+          options: [
+            {
+              name: "postac",
+              description: "Bohater dla jakiego konto usunąć",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "daj",
+          description: "Daj komuś pieniądze",
+          options: [
+            {
+              name: "osoba",
+              description: "Komu dać?",
+              type: "USER",
+              required: true,
+            },
+            {
+              type: "NUMBER",
+              name: "wartosc",
+              description: "Ile mu dać?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "stan",
+          description: "Sprawdź stan konta",
+          options: [
+            {
+              name: "osoba",
+              description: "Kogo konto sprawdzić?",
+              type: "USER",
+            },
+          ],
+        },
+        {
+          type: "SUB_COMMAND",
+          name: "tabela",
+          description: "Zobacz tabelkę",
+        },
+      ],
+    },
+ */
+client.on("interactionCreate", async (i) => {
   if (!i.isMessageComponent()) return;
 
   if (i.data.custom_id === "atak/r") {
@@ -684,6 +1040,41 @@ client.on("interactionCreate", (i) => {
           },
         ],
       });
+    }
+  }
+
+  if (i.data.custom_id.startsWith("a/")) {
+    const roleID = i.data.custom_id.split("/")[1]!;
+    if (i.member === undefined) {
+      return await i.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Użyj w serwerze...",
+      });
+    }
+
+    try {
+      const hasRole = (await i.member.roles.array()).find((elt) =>
+        elt.id === roleID
+      ) !== undefined;
+
+      if (hasRole) {
+        await i.member.roles.remove(roleID);
+      } else {
+        await i.member.roles.add(roleID);
+      }
+
+      return await i.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: hasRole ? "Zabrano role" : "Dodano role",
+      });
+    } catch (_e) {
+      await i.respond(
+        {
+          content: `Nie mam uprawnienień do tego (edytowanie roli na <#${
+            i.channel!.id
+          }>)`,
+        },
+      );
     }
   }
 });
