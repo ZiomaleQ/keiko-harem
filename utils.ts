@@ -39,3 +39,10 @@ export function chunk<T>(arr: T[], n: number): T[][] {
   }
   return [arr.slice(0, n)].concat(chunk(arr.slice(n), n));
 }
+
+export function wrap(str: string, length: number): string[] {
+  return str.replace(
+    new RegExp(`(?![^\\n]{1,${length}}$)([^\\n]{1,${length}})\\s`, "g"),
+    "$1\n",
+  ).split("\n");
+}

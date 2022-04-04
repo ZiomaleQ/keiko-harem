@@ -1,7 +1,9 @@
 import { config } from "./config.ts";
+import { GuildManager, MoneyManager } from "./dataManager.ts";
 import {
   ActionRowComponent,
   ApplicationCommandPartial,
+  AutocompleteInteraction,
   ButtonComponent,
   ButtonStyle,
   CommandClient,
@@ -14,11 +16,6 @@ import {
   SlashCommandInteraction,
   User,
 } from "./deps.ts";
-import {
-  getMoney,
-  getMoneyOrCreate,
-  getMoneyOrDefault,
-} from "./roleplayUtils.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
@@ -233,6 +230,13 @@ client.on("ready", async () => {
               description: "Ile mu dać?",
               required: true,
             },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika dodać?",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
           ],
         },
         {
@@ -252,6 +256,13 @@ client.on("ready", async () => {
               description: "Ile mu zabrać?",
               required: true,
             },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika zabrać?",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
           ],
         },
         {
@@ -263,6 +274,13 @@ client.on("ready", async () => {
               name: "osoba",
               description: "Komu zresetować?",
               type: "USER",
+              required: true,
+            },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika zresetować?",
+              type: "STRING",
+              autocomplete: true,
               required: true,
             },
           ],
@@ -312,6 +330,20 @@ client.on("ready", async () => {
               description: "Ile mu dać?",
               required: true,
             },
+            {
+              name: "dawca",
+              description:
+                "Z którego twojego konta zabrać pieniądze? Brak oznacza główne.",
+              type: "STRING",
+              autocomplete: true,
+            },
+            {
+              name: "biorca",
+              description:
+                "Na które konto wpłacić pieniądze? Brak oznacza główne.",
+              type: "STRING",
+              autocomplete: true,
+            },
           ],
         },
         {
@@ -323,6 +355,12 @@ client.on("ready", async () => {
               name: "osoba",
               description: "Kogo konto sprawdzić?",
               type: "USER",
+            },
+            {
+              name: "postac",
+              description: "Jakiej postaci konto sprawdzić",
+              type: "STRING",
+              autocomplete: true,
             },
           ],
         },
@@ -793,16 +831,41 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
   }
 
   const anotherUser = d.option<User | undefined>("osoba");
-  const money = await getMoneyOrCreate(
+  const money = await MoneyManager.getOrCreate(
     anotherUser?.id ?? d.user.id,
     d.guild.id,
   );
 
-  d.respond({ content: "```json\n" + JSON.stringify(money) + "```" });
+  //TODO HERO FETCH AND GET
+
+  const guildData = (await GuildManager.get(d.guild.id))!;
+
+  const currAcc = money.find((acc) => !acc.isHeroAcc)!;
+
+  const embed = new Embed().setTitle("No siemka").addField(
+    "Balans",
+    currAcc.value + (guildData.currency || "$"),
+  ).addField(
+    "Konto bohatera?",
+    currAcc.isHeroAcc ? "Tak" : "Nie",
+  );
+
+  return d.respond({ embeds: [embed] });
 });
 
-/*
+client.interactions.autocomplete(
+  "money stan",
+  "postac",
+  (d: AutocompleteInteraction) => {
+    if (d.guild === undefined) return d.autocomplete([]);
 
+    //TODO HERO FETCH AND GET
+
+    return d.autocomplete([]);
+  },
+);
+
+/*
     {
       name: "money",
       description: "Zarządzanie pieniędzmi!",
@@ -824,6 +887,13 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
               description: "Ile mu dać?",
               required: true,
             },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika dodać?",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
           ],
         },
         {
@@ -843,6 +913,13 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
               description: "Ile mu zabrać?",
               required: true,
             },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika zabrać?",
+              type: "STRING",
+              autocomplete: true,
+              required: true,
+            },
           ],
         },
         {
@@ -854,6 +931,13 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
               name: "osoba",
               description: "Komu zresetować?",
               type: "USER",
+              required: true,
+            },
+            {
+              name: "postac",
+              description: "Dla której postaci użytkownika zresetować?",
+              type: "STRING",
+              autocomplete: true,
               required: true,
             },
           ],
@@ -903,6 +987,20 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
               description: "Ile mu dać?",
               required: true,
             },
+            {
+              name: "dawca",
+              description:
+                "Z którego twojego konta zabrać pieniądze? Brak oznacza główne.",
+              type: "STRING",
+              autocomplete: true,
+            },
+            {
+              name: "biorca",
+              description:
+                "Na które konto wpłacić pieniądze? Brak oznacza główne.",
+              type: "STRING",
+              autocomplete: true,
+            },
           ],
         },
         {
@@ -914,6 +1012,12 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
               name: "osoba",
               description: "Kogo konto sprawdzić?",
               type: "USER",
+            },
+            {
+              name: "postac",
+              description: "Jakiej postaci konto sprawdzić",
+              type: "STRING",
+              autocomplete: true,
             },
           ],
         },
