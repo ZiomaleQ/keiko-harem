@@ -43,6 +43,15 @@ export async function fetchData<T extends any>(
     },
   );
 
+  console.log(
+    "FETCHING: ",
+    method,
+    response.url,
+    "\n\n With body;",
+    body,
+    "\n",
+  );
+
   if (response.status >= 400) throw Error(await response.text());
 
   if (+(response.headers.get("content-length") ?? 0) === 0) {

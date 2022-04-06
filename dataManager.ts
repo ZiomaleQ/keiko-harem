@@ -96,10 +96,13 @@ export class MoneyManager {
   static async get(guildID: string, userID: string): Promise<NocoMoney[]> {
     const { id } = await GuildManager.getOrCreate(guildID);
 
-    return await fetchData(
+    const resp = await fetchData(
       "GET",
       `/guild/${id}/money?where=(user_id,like,${userID})`,
-    );
+    ) as NocoMoney[];
+
+    console.log(resp);
+    return resp;
   }
 
   static default(userID: string): NocoMoney {
@@ -148,6 +151,13 @@ export class MoneyManager {
 
     const transformedData = this.transformTo(data as NocoMoney);
     return [await this.create(guildID, transformedData)];
+  }
+
+  static update(
+    id: number,
+    data: Record<string, unknown> = {},
+  ): Promise<NocoMoney> {
+    return fetchData("PUT", "/money/" + id, JSON.stringify(data));
   }
 }
 

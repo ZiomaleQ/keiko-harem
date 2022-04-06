@@ -235,7 +235,6 @@ client.on("ready", async () => {
               description: "Dla której postaci użytkownika dodać?",
               type: "STRING",
               autocomplete: true,
-              required: true,
             },
           ],
         },
@@ -261,7 +260,6 @@ client.on("ready", async () => {
               description: "Dla której postaci użytkownika zabrać?",
               type: "STRING",
               autocomplete: true,
-              required: true,
             },
           ],
         },
@@ -281,7 +279,6 @@ client.on("ready", async () => {
               description: "Dla której postaci użytkownika zresetować?",
               type: "STRING",
               autocomplete: true,
-              required: true,
             },
           ],
         },
@@ -822,48 +819,83 @@ client.interactions.handle(
   },
 );
 
-client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
-  if (d.guild === undefined) {
-    return await d.respond({
-      flags: InteractionResponseFlags.EPHEMERAL,
-      content: "Nie jesteś w serwerze...",
-    });
-  }
+// client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
+//   if (d.guild === undefined) {
+//     return await d.respond({
+//       flags: InteractionResponseFlags.EPHEMERAL,
+//       content: "Nie jesteś w serwerze...",
+//     });
+//   }
 
-  const anotherUser = d.option<User | undefined>("osoba");
-  const money = await MoneyManager.getOrCreate(
-    anotherUser?.id ?? d.user.id,
-    d.guild.id,
-  );
+//   const anotherUser = d.option<User | undefined>("osoba");
 
-  //TODO HERO FETCH AND GET
+//   const money = await MoneyManager.getOrCreate(
+//     d.guild.id,
+//     anotherUser?.id ?? d.user.id,
+//   );
 
-  const guildData = (await GuildManager.get(d.guild.id))!;
+//   //TODO HERO FETCH AND GET
 
-  const currAcc = money.find((acc) => !acc.isHeroAcc)!;
+//   const guildData = (await GuildManager.get(d.guild.id))!;
 
-  const embed = new Embed().setTitle("No siemka").addField(
-    "Balans",
-    currAcc.value + (guildData.currency || "$"),
-  ).addField(
-    "Konto bohatera?",
-    currAcc.isHeroAcc ? "Tak" : "Nie",
-  );
+//   const currAcc = money.find((acc) => !acc.isHeroAcc)!;
 
-  return d.respond({ embeds: [embed] });
+//   const embed = new Embed().setTitle("No siemka").addField(
+//     "Balans",
+//     currAcc.value + (guildData.currency || "$"),
+//   ).addField(
+//     "Konto bohatera?",
+//     currAcc.isHeroAcc ? "Tak" : "Nie",
+//   );
+
+//   return d.editResponse({ embeds: [embed] });
+// });
+
+// client.interactions.handle(
+//   "money dodaj",
+//   async (d: SlashCommandInteraction) => {
+//     if (d.guild === undefined) {
+//       return await d.respond({
+//         flags: InteractionResponseFlags.EPHEMERAL,
+//         content: "Nie jesteś w serwerze...",
+//       });
+//     }
+
+//     const moneyValue = Math.abs(d.option<number>("wartosc"));
+//     const anotherUser = d.option<User>("osoba");
+//     const receiverMoney = await MoneyManager.getOrCreate(
+//       d.guild.id,
+//       anotherUser.id,
+//     );
+
+//     const receiverAccount = receiverMoney.find((elt) => !elt.isHeroAcc)!;
+
+//     await MoneyManager.update(receiverAccount.id, {
+//       value: receiverAccount.value + moneyValue,
+//     });
+
+//     return await d.respond({
+//       content: `Dodano ${moneyValue}, dla ${anotherUser.toString()}`,
+//     });
+//   },
+// );
+
+client.interactions.handle("*", (d: SlashCommandInteraction) => {
+  d.reply({ content: "Jeszcze nie zrobione, wróć później" });
 });
 
-client.interactions.autocomplete(
-  "money stan",
-  "postac",
-  (d: AutocompleteInteraction) => {
-    if (d.guild === undefined) return d.autocomplete([]);
+// //TODO HERO AUTOCOMPLETION
+// client.interactions.autocomplete(
+//   "money stan",
+//   "postac",
+//   (d: AutocompleteInteraction) => {
+//     if (d.guild === undefined) return d.autocomplete([]);
 
-    //TODO HERO FETCH AND GET
+//     //TODO HERO FETCH AND GET
 
-    return d.autocomplete([]);
-  },
-);
+//     return d.autocomplete([]);
+//   },
+// );
 
 /*
     {
