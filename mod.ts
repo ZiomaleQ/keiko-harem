@@ -3,7 +3,6 @@ import { GuildManager, MoneyManager } from "./dataManager.ts";
 import {
   ActionRowComponent,
   ApplicationCommandPartial,
-  AutocompleteInteraction,
   ButtonComponent,
   ButtonStyle,
   CommandClient,
@@ -360,11 +359,6 @@ client.on("ready", async () => {
               autocomplete: true,
             },
           ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "tabela",
-          description: "Zobacz tabelkę",
         },
       ],
     },
@@ -836,7 +830,7 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
 
   //TODO HERO FETCH AND GET
 
-  const guildData = (await GuildManager.get(d.guild.id))!;
+  const guildData = (await GuildManager.getOrCreate(d.guild.id));
 
   const currAcc = money.find((acc) => acc.heroID === null)!;
 
@@ -872,11 +866,135 @@ client.interactions.handle(
 
     await MoneyManager.update(
       receiverAccount,
-      receiverAccount.value += moneyValue,
+      receiverAccount.value + moneyValue,
+    );
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    return await d.respond({
+      content: `Dodano ${moneyValue}${
+        guildData.money.currency || "$"
+      }, dla ${anotherUser.toString()}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "money zabierz",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const moneyValue = Math.abs(d.option<number>("wartosc"));
+    const anotherUser = d.option<User>("osoba");
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
+
+    const receiverAccount = receiverMoney.find((elt) => elt.heroID === null)!;
+
+    await MoneyManager.update(
+      receiverAccount,
+      receiverAccount.value - moneyValue,
+    );
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    return await d.respond({
+      content: `Zabrano ${moneyValue}${
+        guildData.money.currency || "$"
+      }, dla ${anotherUser.toString()}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "money reset",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const anotherUser = d.option<User>("osoba");
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
+
+    const receiverAccount = receiverMoney.find((elt) => elt.heroID === null)!;
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    await MoneyManager.update(
+      receiverAccount,
+      guildData.money.startingMoney,
     );
 
     return await d.respond({
-      content: `Dodano ${moneyValue}, dla ${anotherUser.toString()}`,
+      content: `Zresetowano stan konta na: ${guildData.money.startingMoney}${
+        guildData.money.currency || "$"
+      } dla ${anotherUser.toString()}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "money daj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const moneyValue = Math.abs(d.option<number>("wartosc"));
+    const anotherUser = d.option<User>("osoba");
+
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
+
+    const giverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      d.user.id,
+    );
+
+    const receiverAccount = receiverMoney.find((elt) => elt.heroID === null)!;
+
+    const giverAccount = giverMoney.find((elt) => elt.heroID === null)!;
+
+    if (giverAccount.value < moneyValue) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Ale ty tyle nie masz...",
+      });
+    }
+
+    await MoneyManager.update(
+      giverAccount,
+      giverAccount.value - moneyValue,
+    );
+
+    await MoneyManager.update(
+      receiverAccount,
+      receiverAccount.value + moneyValue,
+    );
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    return await d.respond({
+      content: `Dałeś ${moneyValue}${
+        guildData.money.currency || "$"
+      }, dal ${anotherUser.toString()}`,
     });
   },
 );
@@ -898,170 +1016,6 @@ client.interactions.handle("*", (d: SlashCommandInteraction) => {
 //   },
 // );
 
-/*
-    {
-      name: "money",
-      description: "Zarządzanie pieniędzmi!",
-      options: [
-        {
-          type: "SUB_COMMAND",
-          name: "dodaj",
-          description: "Druknij komuś pieniążki!",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu dać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu dać?",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika dodać?",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "zabierz",
-          description: "Zabierz komuś pieniążki!",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu zabrać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu zabrać?",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika zabrać?",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "reset",
-          description: "Przywróć wartości do ustawień początkowych",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu zresetować?",
-              type: "USER",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika zresetować?",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "stworz",
-          description: "Stworz konto dla bohatera",
-          options: [
-            {
-              name: "postac",
-              description: "Bohater dla jakiego konto założyć",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "usun",
-          description: "Usuń konto bohatera",
-          options: [
-            {
-              name: "postac",
-              description: "Bohater dla jakiego konto usunąć",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "daj",
-          description: "Daj komuś pieniądze",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu dać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu dać?",
-              required: true,
-            },
-            {
-              name: "dawca",
-              description:
-                "Z którego twojego konta zabrać pieniądze? Brak oznacza główne.",
-              type: "STRING",
-              autocomplete: true,
-            },
-            {
-              name: "biorca",
-              description:
-                "Na które konto wpłacić pieniądze? Brak oznacza główne.",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "stan",
-          description: "Sprawdź stan konta",
-          options: [
-            {
-              name: "osoba",
-              description: "Kogo konto sprawdzić?",
-              type: "USER",
-            },
-            {
-              name: "postac",
-              description: "Jakiej postaci konto sprawdzić",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "tabela",
-          description: "Zobacz tabelkę",
-        },
-      ],
-    },
- */
 client.on("interactionCreate", async (i) => {
   if (!i.isMessageComponent()) return;
 

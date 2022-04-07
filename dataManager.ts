@@ -13,7 +13,7 @@ export class GuildManager {
 
   static async create(
     data: RavenGuild,
-  ): Promise<RavenGuild> {
+  ): Promise<RavenGuild[]> {
     return await fetchData(
       "POST",
       "/guild/bulk_docs",
@@ -38,7 +38,7 @@ export class GuildManager {
     const tempData = await this.get(gid);
     if (tempData !== undefined) return tempData;
 
-    return this.create(data);
+    return (await this.create(data))[0]!;
   }
 }
 
@@ -80,7 +80,7 @@ export class MoneyManager {
 
   static async create(
     data: RavenMoney,
-  ): Promise<RavenMoney> {
+  ): Promise<RavenMoney[]> {
     return await fetchData(
       "POST",
       "/money/bulk_docs",
@@ -96,7 +96,12 @@ export class MoneyManager {
     const tempData = await this.get(gid, uid);
     if (tempData.length > 0) return tempData;
 
-    return [await this.create(data)];
+    if (data["@metadata"]["@id"] === "") {
+      const guildData = await GuildManager.getOrCreate(gid);
+      data.value = guildData.money.startingMoney;
+    }
+
+    return [...await this.create(data)];
   }
 
   static update(
