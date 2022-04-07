@@ -1,178 +1,129 @@
-import { fetchData, Item, Monster } from "./roleplayUtils.ts";
+import { fetchData } from "./roleplayUtils.ts";
 
 export class GuildManager {
-  static async get(id: string, discordID = true): Promise<NocoGuild | null> {
-    if (discordID) {
-      return (await fetchData(
-        "GET",
-        `/guild/findOne?where=(guild,like,${id})`,
-      )) as NocoGuild;
-    } else {
-      return (await fetchData(
-        "GET",
-        `/guild/${id}`,
-      )) as NocoGuild;
-    }
+  static async get(gid: string): Promise<RavenGuild | undefined> {
+    const resp = await fetchData(
+      "GET",
+      `/guild/queries?query=from "@empty" where gid == "${gid}"`,
+    );
+
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results[0];
   }
 
   static async create(
-    data: CreateGuildPayload,
-  ): Promise<NocoGuild> {
+    data: RavenGuild,
+  ): Promise<RavenGuild> {
     return await fetchData(
       "POST",
-      "/guild",
-      JSON.stringify(data),
+      "/guild/bulk_docs",
+      JSON.stringify({ Commands: [{ Document: data, Id: "", Type: "PUT" }] }),
     );
   }
 
-  static default(id: string): NocoGuild {
+  static default(gid: string): RavenGuild {
     return {
-      addons: "",
-      startingMoney: 0,
-      firstLevelXP: 0,
-      xpPerLevel: 0,
-      guild: id,
+      "@metadata": { "@collection": null, "@id": "" },
+      gid: gid,
       maxHeroes: 1,
-      id: -1,
-      currency: null,
-      heroList: [],
-      itemsList: [],
-      moneyList: [],
-      monstersList: [],
+      money: { currency: null, startingMoney: 0 },
+      xp: { perLevel: 100, starting: 100 },
     };
   }
 
-  static transformTo(data: NocoGuild): CreateGuildPayload {
-    // deno-lint-ignore no-explicit-any
-    const tempData = data as any;
-    delete tempData.id;
-    return tempData;
-  }
-
   static async getOrCreate(
-    id: string,
-    data: NocoGuild | CreateGuildPayload = this.default(id),
-    discordID = true,
-  ): Promise<NocoGuild> {
-    const tempData = await this.get(id, discordID);
-    if (tempData !== null) return tempData;
+    gid: string,
+    data: RavenGuild = this.default(gid),
+  ): Promise<RavenGuild> {
+    const tempData = await this.get(gid);
+    if (tempData !== undefined) return tempData;
 
-    const transformedData = this.transformTo(data as NocoGuild);
-    return this.create(transformedData);
-  }
-
-  static async exists(id: string, discordID = true): Promise<boolean> {
-    if (discordID) {
-      return (await this.get(id, discordID)) !== null;
-    } else {
-      return await fetchData("GET", `/guild/${id}/exists`);
-    }
-  }
-
-  static all(): Promise<NocoGuild[]> {
-    return fetchData("GET", "/guild");
+    return this.create(data);
   }
 }
 
-export interface CreateGuildPayload {
-  guild: string;
-  startingMoney: number;
-  xpPerLevel: number;
-  firstLevelXP: number;
-  addons: string;
+export interface RavenGuild {
+  "@metadata": Metadata;
+  gid: string;
   maxHeroes: number;
-  itemsList: Item[];
-  heroList: Hero[];
-  monstersList: Monster[];
-  moneyList: NocoMoney[];
-  currency: null | string;
+  money: { currency: string | null; startingMoney: number };
+  xp: { perLevel: number; starting: number };
 }
 
-export interface NocoGuild extends CreateGuildPayload {
-  id: number;
+export interface Metadata {
+  "@collection": string | null;
+  "@id": string;
+  // deno-lint-ignore no-explicit-any
+  [index: string]: any;
 }
 
 export class MoneyManager {
-  static async get(guildID: string, userID: string): Promise<NocoMoney[]> {
-    const { id } = await GuildManager.getOrCreate(guildID);
-
+  static async get(gid: string, uid: string): Promise<RavenMoney[]> {
     const resp = await fetchData(
       "GET",
-      `/guild/${id}/money?where=(user_id,like,${userID})`,
-    ) as NocoMoney[];
+      `/money/queries?query=from "@empty" where gid == "${gid}" and uid == "${uid}"`,
+    );
 
-    console.log(resp);
-    return resp;
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results;
   }
 
-  static default(userID: string): NocoMoney {
+  static default(gid: string, uid: string): RavenMoney {
     return {
-      id: -1,
-      guildID: -1,
-      user_id: userID,
-      isHeroAcc: false,
+      "@metadata": { "@collection": null, "@id": "" },
+      gid,
+      uid,
       value: 0,
       heroID: null,
     };
   }
 
-  static create(
-    guildID: string,
-    data: CreateMoneyPayload,
-  ): Promise<NocoMoney> {
-    return fetchData(
+  static async create(
+    data: RavenMoney,
+  ): Promise<RavenMoney> {
+    return await fetchData(
       "POST",
-      `/guild/${guildID}/money`,
-      JSON.stringify(data),
+      "/money/bulk_docs",
+      JSON.stringify({ Commands: [{ Document: data, Id: "", Type: "PUT" }] }),
     );
   }
 
-  static transformTo(data: NocoMoney, initialValue = 0): CreateMoneyPayload {
-    // deno-lint-ignore no-explicit-any
-    const tempData = data as any;
-
-    delete tempData.id;
-    delete tempData.guildID;
-    delete tempData.heroID;
-
-    tempData.value = initialValue;
-    tempData.nc_34j6__hero_id = null;
-
-    return tempData;
-  }
-
   static async getOrCreate(
-    guildID: string,
-    userID: string,
-    data: CreateMoneyPayload | NocoMoney = this.default(userID),
-  ): Promise<NocoMoney[]> {
-    const tempData = await this.get(guildID, userID);
+    gid: string,
+    uid: string,
+    data: RavenMoney = this.default(gid, uid),
+  ): Promise<RavenMoney[]> {
+    const tempData = await this.get(gid, uid);
     if (tempData.length > 0) return tempData;
 
-    const transformedData = this.transformTo(data as NocoMoney);
-    return [await this.create(guildID, transformedData)];
+    return [await this.create(data)];
   }
 
   static update(
-    id: number,
-    data: Record<string, unknown> = {},
-  ): Promise<NocoMoney> {
-    return fetchData("PUT", "/money/" + id, JSON.stringify(data));
+    data: RavenMoney,
+    value: number,
+  ): Promise<RavenMoney> {
+    return fetchData(
+      "POST",
+      "/money/bulk_docs",
+      JSON.stringify({
+        Commands: [{
+          Id: data["@metadata"]["@id"],
+          Patch: { Script: `this.value = ${value}` },
+          Type: "PATCH",
+        }],
+      }),
+    );
   }
 }
 
-export interface CreateMoneyPayload {
-  user_id: string;
+export interface RavenMoney {
+  "@metadata": Metadata;
+  gid: string;
+  uid: string;
   value: number;
-  /** DB ID */
-  heroID: number | null;
-  isHeroAcc: boolean;
-}
-
-export interface NocoMoney extends CreateMoneyPayload {
-  id: number;
-  /** DB ID */
-  guildID: number;
+  /** ID HASH */
+  heroID: string | null;
 }
 
 export class HeroManager {

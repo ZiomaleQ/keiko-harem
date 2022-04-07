@@ -819,66 +819,67 @@ client.interactions.handle(
   },
 );
 
-// client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
-//   if (d.guild === undefined) {
-//     return await d.respond({
-//       flags: InteractionResponseFlags.EPHEMERAL,
-//       content: "Nie jesteś w serwerze...",
-//     });
-//   }
+client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
+  }
 
-//   const anotherUser = d.option<User | undefined>("osoba");
+  const anotherUser = d.option<User | undefined>("osoba");
 
-//   const money = await MoneyManager.getOrCreate(
-//     d.guild.id,
-//     anotherUser?.id ?? d.user.id,
-//   );
+  const money = await MoneyManager.getOrCreate(
+    d.guild.id,
+    anotherUser?.id ?? d.user.id,
+  );
 
-//   //TODO HERO FETCH AND GET
+  //TODO HERO FETCH AND GET
 
-//   const guildData = (await GuildManager.get(d.guild.id))!;
+  const guildData = (await GuildManager.get(d.guild.id))!;
 
-//   const currAcc = money.find((acc) => !acc.isHeroAcc)!;
+  const currAcc = money.find((acc) => acc.heroID === null)!;
 
-//   const embed = new Embed().setTitle("No siemka").addField(
-//     "Balans",
-//     currAcc.value + (guildData.currency || "$"),
-//   ).addField(
-//     "Konto bohatera?",
-//     currAcc.isHeroAcc ? "Tak" : "Nie",
-//   );
+  const embed = new Embed().setTitle("No siemka").addField(
+    "Balans",
+    currAcc.value + (guildData.money.currency || "$"),
+  ).addField(
+    "Konto bohatera?",
+    currAcc.heroID !== null ? "Tak" : "Nie",
+  );
 
-//   return d.editResponse({ embeds: [embed] });
-// });
+  return d.respond({ embeds: [embed] });
+});
 
-// client.interactions.handle(
-//   "money dodaj",
-//   async (d: SlashCommandInteraction) => {
-//     if (d.guild === undefined) {
-//       return await d.respond({
-//         flags: InteractionResponseFlags.EPHEMERAL,
-//         content: "Nie jesteś w serwerze...",
-//       });
-//     }
+client.interactions.handle(
+  "money dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
 
-//     const moneyValue = Math.abs(d.option<number>("wartosc"));
-//     const anotherUser = d.option<User>("osoba");
-//     const receiverMoney = await MoneyManager.getOrCreate(
-//       d.guild.id,
-//       anotherUser.id,
-//     );
+    const moneyValue = Math.abs(d.option<number>("wartosc"));
+    const anotherUser = d.option<User>("osoba");
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
 
-//     const receiverAccount = receiverMoney.find((elt) => !elt.isHeroAcc)!;
+    const receiverAccount = receiverMoney.find((elt) => elt.heroID === null)!;
 
-//     await MoneyManager.update(receiverAccount.id, {
-//       value: receiverAccount.value + moneyValue,
-//     });
+    await MoneyManager.update(
+      receiverAccount,
+      receiverAccount.value += moneyValue,
+    );
 
-//     return await d.respond({
-//       content: `Dodano ${moneyValue}, dla ${anotherUser.toString()}`,
-//     });
-//   },
-// );
+    return await d.respond({
+      content: `Dodano ${moneyValue}, dla ${anotherUser.toString()}`,
+    });
+  },
+);
 
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({ content: "Jeszcze nie zrobione, wróć później" });
