@@ -75,6 +75,7 @@ export class MoneyManager {
       uid,
       value: 0,
       heroID: null,
+      items: [],
     };
   }
 
@@ -129,21 +130,107 @@ export interface RavenMoney {
   value: number;
   /** ID HASH */
   heroID: string | null;
+  items: { hash: string; quantinity: number }[];
 }
 
-export class HeroManager {
-  static async get(owner: string): Promise<Hero> {
-    return await fetchData("GET", `/hero?where=(owner,like,${owner})`);
+export class ItemManager {
+  static async get(
+    gid: string,
+    page = -1,
+  ): Promise<{ allItems: number; data: RavenItem[] }> {
+    const resp = await fetchData(
+      "GET",
+      `/items/queries?query=from "@empty" where gid == "${gid}" ${
+        page === -1 ? "" : "limit " + page * 5 + " ,5"
+      }`,
+    );
+
+    return {
+      // deno-lint-ignore no-explicit-any
+      allItems: (resp as any).LongTotalResults,
+      // deno-lint-ignore no-explicit-any
+      data: (resp as any).Results,
+    };
+  }
+
+  static async getByName(
+    gid: string,
+    name: string,
+  ): Promise<RavenItem[]> {
+    const resp = await fetchData(
+      "GET",
+      `/items/queries?query=from "@empty" where gid == "${gid}" and name == "${name}"`,
+    );
+
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results;
+  }
+
+  static async startWith(gid: string, str: string): Promise<RavenItem[]> {
+    const resp = await fetchData(
+      "GET",
+      `/items/queries?query=from "@empty" where gid == "${gid}" and startsWith(name, "${str}") limit 25`,
+    );
+
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results;
+  }
+
+  static async getByID(id: string): Promise<RavenItem | undefined> {
+    return await fetchData(
+      "GET",
+      `/items/docs?id=${id}`,
+    );
   }
 }
 
-export interface Hero {
-  id: number;
-  /** JSON */
-  data: string;
-  owner: string;
-  /** DB ID*/
-  guildID: number;
-  /** JSON */
-  attachments: string;
+export interface RavenItem {
+  "@metadata": Metadata;
+  gid: string;
+  name: string;
+  data: {
+    price: { id: string; price: number; entity: "ROLE" | "USER" }[] | number;
+    description: string;
+    inventory: boolean;
+    /** -1 == Infinity */
+    stock: number;
+    time: {
+      start: string;
+      end: string;
+    };
+    sell: {
+      /** String for pecentage, number for fixed price */
+      for: string | number;
+      canSell: boolean;
+    };
+    roles: {
+      give: string[];
+      remove: string[];
+      required: string[];
+    };
+    messages: {
+      use: string;
+      buy: string;
+      sell: string;
+      add: string;
+      take: string;
+    };
+  };
 }
+
+// export class HeroManager {
+//   static async get(owner: string): Promise<Hero> {
+//     return await fetchData("GET", `/hero?where=(owner,like,${owner})`);
+//   }
+// }
+
+// export interface Hero {
+//   id: number;
+//   /** JSON */
+//   data: string;
+//   owner: string;
+//   /** DB ID*/
+//   guildID: number;
+//   /** JSON */
+//   attachments: string;
+// }

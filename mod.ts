@@ -1,12 +1,19 @@
 import { config } from "./config.ts";
-import { GuildManager, MoneyManager } from "./dataManager.ts";
+import {
+  GuildManager,
+  ItemManager,
+  MoneyManager,
+  RavenItem,
+} from "./dataManager.ts";
 import {
   ActionRowComponent,
   ApplicationCommandPartial,
+  AutocompleteInteraction,
   ButtonComponent,
   ButtonStyle,
   CommandClient,
   Embed,
+  EmbedField,
   Intents,
   InteractionChannel,
   InteractionResponseFlags,
@@ -22,351 +29,15 @@ const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all();
 
-  const slashCommands: ApplicationCommandPartial[] = [
-    {
-      name: "anime",
-      description: "Info a anime",
-      options: [
-        {
-          name: "nazwa",
-          description: "Nazwa anime którego szukasz",
-          type: "STRING",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "atak",
-      description: "Atakowańsko",
-      options: [
-        {
-          name: "lvl",
-          description: "Poziom postaci!",
-          type: "INTEGER",
-          minValue: 1,
-          required: true,
-        },
-        {
-          name: "modif",
-          description: "Modyfikator trafienia!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "dmg",
-          description: "Dodatkowe 'AD'!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "krytyczne",
-          description: "Szansa na kryta!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "wartosc-kryt",
-          description: "Mnożnik krytyka!",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "dice",
-      description: "Losowanko",
-      options: [
-        {
-          name: "max",
-          description: "Maksymalna wartość",
-          type: "INTEGER",
-          required: true,
-        },
-        {
-          name: "min",
-          description: "Minimalna wartość",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "pancerz",
-      description: "Oblicz zmniejszenie obrażeń",
-      options: [
-        {
-          name: "pancerz",
-          description: "Ilość pancerza",
-          type: "INTEGER",
-          required: true,
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "unik",
-      description: "Unikańsko",
-      options: [
-        {
-          name: "unik",
-          description: "Wartość uniku",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "dmg",
-          description: "Obrażenia jakie dostajesz",
-          type: "INTEGER",
-          minValue: 0,
-        },
-        {
-          name: "pancerz",
-          description: "Pancerz postaci",
-          type: "INTEGER",
-          minValue: 0,
-        },
-      ],
-    },
-    {
-      name: "autorole",
-      description: "Autorolowańsko",
-      options: [
-        {
-          type: "SUB_COMMAND",
-          name: "dodaj",
-          description: "Dodaj role do menu",
-          options: [
-            {
-              type: "ROLE",
-              name: "rola",
-              description: "Rola jaką dodać",
-              required: true,
-            },
-            {
-              type: "STRING",
-              name: "wiadomosc",
-              description: "ID menu",
-              required: true,
-            },
-            {
-              name: "kanał",
-              description: "Kanał na którym znajduje się menu",
-              type: "CHANNEL",
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "usun",
-          description: "Usun role z menu",
-          options: [
-            {
-              type: "ROLE",
-              name: "rola",
-              description: "Rola jaką usunąć",
-              required: true,
-            },
-            {
-              type: "STRING",
-              name: "wiadomosc",
-              description: "ID menu",
-              required: true,
-            },
-            {
-              name: "kanał",
-              description: "Kanał na którym znajduje się menu",
-              type: "CHANNEL",
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "stworz",
-          description: "Stworz nowe menu",
-          options: [
-            {
-              name: "tytuł",
-              description: "Tytuł wiadomości",
-              type: "STRING",
-              required: true,
-            },
-            {
-              name: "opis",
-              description: "Opis menu",
-              type: "STRING",
-              required: true,
-            },
-            {
-              name: "kanał",
-              description: "Kanał na który wysłać wiadomość",
-              type: "CHANNEL",
-              required: false,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: "money",
-      description: "Zarządzanie pieniędzmi!",
-      options: [
-        {
-          type: "SUB_COMMAND",
-          name: "dodaj",
-          description: "Druknij komuś pieniążki!",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu dać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu dać?",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika dodać?",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "zabierz",
-          description: "Zabierz komuś pieniążki!",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu zabrać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu zabrać?",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika zabrać?",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "reset",
-          description: "Przywróć wartości do ustawień początkowych",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu zresetować?",
-              type: "USER",
-              required: true,
-            },
-            {
-              name: "postac",
-              description: "Dla której postaci użytkownika zresetować?",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "stworz",
-          description: "Stworz konto dla bohatera",
-          options: [
-            {
-              name: "postac",
-              description: "Bohater dla jakiego konto założyć",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "usun",
-          description: "Usuń konto bohatera",
-          options: [
-            {
-              name: "postac",
-              description: "Bohater dla jakiego konto usunąć",
-              type: "STRING",
-              autocomplete: true,
-              required: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "daj",
-          description: "Daj komuś pieniądze",
-          options: [
-            {
-              name: "osoba",
-              description: "Komu dać?",
-              type: "USER",
-              required: true,
-            },
-            {
-              type: "NUMBER",
-              name: "wartosc",
-              description: "Ile mu dać?",
-              required: true,
-            },
-            {
-              name: "dawca",
-              description:
-                "Z którego twojego konta zabrać pieniądze? Brak oznacza główne.",
-              type: "STRING",
-              autocomplete: true,
-            },
-            {
-              name: "biorca",
-              description:
-                "Na które konto wpłacić pieniądze? Brak oznacza główne.",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-        {
-          type: "SUB_COMMAND",
-          name: "stan",
-          description: "Sprawdź stan konta",
-          options: [
-            {
-              name: "osoba",
-              description: "Kogo konto sprawdzić?",
-              type: "USER",
-            },
-            {
-              name: "postac",
-              description: "Jakiej postaci konto sprawdzić",
-              type: "STRING",
-              autocomplete: true,
-            },
-          ],
-        },
-      ],
-    },
-  ];
+  const keikoCommands = await import("./commands.json", {
+    assert: { type: "json" },
+  });
 
-  if (commands.size != slashCommands.length) {
-    console.log("updated commands");
-    client.interactions.commands.bulkEdit(slashCommands);
+  if (commands.size != keikoCommands.default.length) {
+    console.log("Updated commands");
+    client.interactions.commands.bulkEdit(
+      (keikoCommands.default) as ApplicationCommandPartial[],
+    );
   }
 
   console.log("Hi, I'm " + client.user?.tag);
@@ -999,6 +670,324 @@ client.interactions.handle(
   },
 );
 
+client.interactions.handle(
+  "sklep przegladaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const items = await ItemManager.get(d.guild.id, 0);
+    const guildData = await GuildManager.getOrCreate(d.guild.id);
+
+    const embed = new Embed().setTitle("No siemka!");
+
+    if (items.allItems === 0) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie ma żadnych przedmiotów",
+      });
+    }
+
+    items.data.map((item) =>
+      convertItemsToEmbeds(item, guildData.money.currency)
+    ).forEach((field) => {
+      embed.addField(field);
+    });
+
+    d.reply({
+      embeds: [embed],
+      components: [{
+        type: "ACTION_ROW",
+        components: [
+          {
+            type: MessageComponentType.Button,
+            label: "Poprzednia strona",
+            style: ButtonStyle.PRIMARY,
+            customID: "shop/0",
+            disabled: true,
+          },
+          {
+            type: MessageComponentType.Button,
+            label: "Kolejna strona",
+            style: ButtonStyle.PRIMARY,
+            customID: "shop/1",
+            disabled: items.allItems <= items.data.length,
+          },
+        ],
+      }],
+    });
+  },
+);
+
+function convertItemsToEmbeds(
+  item: RavenItem,
+  guildCurrency: string | null,
+): EmbedField {
+  return {
+    name: item.name + " - " + item.data.price + (guildCurrency || "$"),
+    value: item.data.description,
+  };
+}
+
+client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
+  }
+
+  let item: RavenItem | undefined = (await ItemManager.getByName(
+    d.guild.id,
+    d.option<string>("nazwa"),
+  ))[0];
+
+  if (item === undefined) {
+    item = await ItemManager.getByID(d.option<string>("nazwa"));
+  }
+
+  if (item === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Taki przedmiot nie istnieje...",
+    });
+  }
+  d.respond({ content: "```json " + JSON.stringify(item) + "```" });
+});
+
+client.interactions.autocomplete("sklep", "*", autocompleteItem);
+
+async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
+  const items = await ItemManager.startWith(d.guild!.id, d.focusedOption.value);
+  await d.autocomplete(items.map((elt) => ({
+    name: elt.name,
+    value: elt["@metadata"]["@id"],
+  })));
+}
+
+/*
+
+  {
+    "name": "sklep",
+    "description": "Zarządzanie przedmiotami!",
+    "options": [
+      {
+        "type": "SUB_COMMAND",
+        "name": "kup",
+        "description": "Kup przedmiot",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true,
+            "autocomplete": true
+          },
+          {
+            "type": "INTEGER",
+            "name": "ilosc",
+            "description": "Ilość",
+            "required": true
+          },
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "dodaj",
+        "description": "Dodaj przedmiot do sklepu",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "ekwipunek",
+        "description": "Pokaż swój ekwipunek",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "info",
+        "description": "Pokaż info o przedmiocie",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "autocomplete": true
+          },
+          {
+            "type": "BOOLEAN",
+            "name": "szczegolowe",
+            "description": "Pokazać szczegóły?"
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "edytuj",
+        "description": "Edytuj przedmiot ze sklepu",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "usun",
+        "description": "Usuń przedmiot ze sklepu",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "sprzedaj",
+        "description": "Sprzedaj przedmiot z ekwipunku",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          },
+          {
+            "type": "INTEGER",
+            "name": "ilosc",
+            "description": "Ilość przedmiotów",
+            "required": true
+          },
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "uzyj",
+        "description": "Użyj przedmiot z ekwipunku",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          },
+          {
+            "type": "INTEGER",
+            "name": "ilosc",
+            "description": "Ilość przedmiotów",
+            "required": true
+          },
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "daj",
+        "description": "Daj komus przedmiot ze sklepu",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          },
+          {
+            "type": "INTEGER",
+            "name": "ilosc",
+            "description": "Ilość przedmiotów",
+            "required": true
+          },
+          {
+            "name": "osoba",
+            "description": "Komu dać?",
+            "type": "USER",
+            "required": true
+          },
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "zabierz",
+        "description": "Zabierz komuś przedmiot z ekwipunku",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "required": true
+          },
+          {
+            "type": "INTEGER",
+            "name": "ilosc",
+            "description": "Ilość przedmiotów",
+            "required": true
+          },
+          {
+            "name": "osoba",
+            "description": "Komu dać?",
+            "type": "USER",
+            "required": true
+          },
+          {
+            "type": "STRING",
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "autocomplete": true
+          }
+        ]
+      }
+    ]
+  }
+
+ */
+
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({ content: "Jeszcze nie zrobione, wróć później" });
 });
@@ -1167,6 +1156,46 @@ client.on("interactionCreate", async (i) => {
         },
       );
     }
+  }
+
+  if (i.data.custom_id.startsWith("shop/")) {
+    const page = ~~i.data.custom_id.split("/")[1]!;
+
+    const items = await ItemManager.get(i.guild!.id, page);
+    const guildData = await GuildManager.getOrCreate(i.guild!.id);
+
+    const embed = new Embed().setTitle("No siemka!");
+
+    items.data.map((item) =>
+      convertItemsToEmbeds(item, guildData.money.currency)
+    ).forEach((field) => {
+      embed.addField(field);
+    });
+
+    await i.deferredMessageUpdate();
+
+    i.message.edit({
+      embeds: [embed],
+      components: [{
+        type: "ACTION_ROW",
+        components: [
+          {
+            type: MessageComponentType.BUTTON,
+            label: "Poprzednia strona",
+            style: ButtonStyle.PRIMARY,
+            customID: "shop/" + (page - 1),
+            disabled: (page - 1) < 0,
+          },
+          {
+            type: MessageComponentType.BUTTON,
+            label: "Kolejna strona",
+            style: ButtonStyle.PRIMARY,
+            customID: "shop/" + (page + 1),
+            disabled: items.allItems - (items.data.length + page * 5) <= 0,
+          },
+        ],
+      }],
+    });
   }
 });
 
