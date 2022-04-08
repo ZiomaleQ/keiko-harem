@@ -919,8 +919,6 @@ client.interactions.handle(
           label: "Opis",
           customID: "description",
           style: "PARAGRAPH",
-          minLength: 3,
-          maxLength: 100,
         }],
       }, {
         type: "ACTION_ROW",
@@ -963,7 +961,99 @@ client.interactions.handle(
         : "Brak",
     );
 
-    d.respond({  embeds: [embed] });
+    d.respond({ embeds: [embed] });
+  },
+);
+
+client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
+  }
+
+  let item: RavenItem | undefined = (await ItemManager.getByName(
+    d.guild.id,
+    d.option<string>("nazwa"),
+  ));
+
+  // const detailed = d.option("szczegolowe") as unknown as boolean;
+
+  if (item === undefined) {
+    item = await ItemManager.getByID(d.option<string>("nazwa"));
+  }
+
+  if (item === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Taki przedmiot nie istnieje...",
+    });
+  }
+
+  function parseCost(): string {
+    const entities = {
+      "ROLE": "Rola",
+      "USER": "Użytkownik",
+      "ALL": "W ostateczności",
+    };
+
+    return Array.isArray(item!.data.price)
+      ? item!.data.price.map((elt) =>
+        `${entities[elt.entity]} ${
+          elt.id === "" ? "" : `- <@${elt.id}>`
+        }: ${elt.price}`
+      ).join("\n")
+      : item!.data.price + "";
+  }
+
+  return d.respond({
+    embeds: [
+      new Embed()
+        .setTitle("No siemka")
+        .addField("Nazwa", item.name)
+        .addField(
+          "Opis",
+          item.data.description || "Brak",
+        ).addField(
+          "Koszt",
+          parseCost(),
+        ),
+    ],
+  });
+});
+
+client.interactions.handle(
+  "sklep edytuj",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    d.showModal({
+      title: "Edytuj przedmiot",
+      customID: "item/edit",
+      components: [{
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Opis",
+          customID: "description",
+          style: "PARAGRAPH",
+        }],
+      }, {
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Cena",
+          customID: "price",
+          style: "SHORT",
+        }],
+      }],
+    });
   },
 );
 
@@ -983,37 +1073,6 @@ async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
     "name": "sklep",
     "description": "Zarządzanie przedmiotami!",
     "options": [
-      {
-        "type": "SUB_COMMAND",
-        "name": "ekwipunek",
-        "description": "Pokaż swój ekwipunek",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "info",
-        "description": "Pokaż info o przedmiocie",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "autocomplete": true
-          },
-          {
-            "type": "BOOLEAN",
-            "name": "szczegolowe",
-            "description": "Pokazać szczegóły?"
-          }
-        ]
-      },
       {
         "type": "SUB_COMMAND",
         "name": "edytuj",
@@ -1188,7 +1247,6 @@ client.on("interactionCreate", async (i) => {
       });
       return i.reply("Stworzono przedmiot z nazwą: " + name);
     }
-    console.log(i);
   }
 
   if (!i.isMessageComponent()) return;
