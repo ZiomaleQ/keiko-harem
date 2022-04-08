@@ -108,6 +108,7 @@ export class MoneyManager {
   static update(
     data: RavenMoney,
     value: number,
+    items: { hash: string; quantinity: number }[] = data.items,
   ): Promise<RavenMoney> {
     return fetchData(
       "POST",
@@ -115,7 +116,11 @@ export class MoneyManager {
       JSON.stringify({
         Commands: [{
           Id: data["@metadata"]["@id"],
-          Patch: { Script: `this.value = ${value}` },
+          Patch: {
+            Script: `this.value = ${value}; this.items = ${
+              JSON.stringify(items)
+            }`,
+          },
           Type: "PATCH",
         }],
       }),
@@ -156,14 +161,14 @@ export class ItemManager {
   static async getByName(
     gid: string,
     name: string,
-  ): Promise<RavenItem[]> {
+  ): Promise<RavenItem | undefined> {
     const resp = await fetchData(
       "GET",
       `/items/queries?query=from "@empty" where gid == "${gid}" and name == "${name}"`,
     );
 
     // deno-lint-ignore no-explicit-any
-    return (resp as any).Results;
+    return (resp as any).Results[0];
   }
 
   static async startWith(gid: string, str: string): Promise<RavenItem[]> {
@@ -177,9 +182,52 @@ export class ItemManager {
   }
 
   static async getByID(id: string): Promise<RavenItem | undefined> {
-    return await fetchData(
+    return ((await fetchData(
       "GET",
       `/items/docs?id=${id}`,
+      // deno-lint-ignore no-explicit-any
+    )) as any).Results[0];
+  }
+
+  // deno-lint-ignore no-explicit-any
+  static async create(data: any) {
+    const actualData: Partial<RavenItem> = {
+      data: {
+        price: data.data?.price ?? 0,
+        description: data.data?.description ?? "",
+        inventory: data.data?.inventory ?? true,
+        stock: data.data?.stock ?? -1,
+        time: {
+          start: data.data?.time?.start ?? "",
+          end: data.data?.time?.end ?? "",
+        },
+        sell: {
+          for: data.data?.sell?.for ?? "100",
+          canSell: data.data?.sell?.canSell ?? true,
+        },
+        roles: {
+          give: data.data?.roles?.give ?? [],
+          remove: data.data?.roles?.remove ?? [],
+          required: data.data?.roles?.required ?? [],
+        },
+        messages: {
+          use: data.data?.messages?.use ?? "",
+          buy: data.data?.messages?.buy ?? "",
+          sell: data.data?.messages?.sell ?? "",
+          add: data.data?.messages?.add ?? "",
+          take: data.data?.messages?.take ?? "",
+        },
+      },
+      gid: data.gid!,
+      name: data.name!,
+    };
+
+    return await fetchData(
+      "POST",
+      "/items/bulk_docs",
+      JSON.stringify({
+        Commands: [{ Document: actualData, Id: "", Type: "PUT" }],
+      }),
     );
   }
 }
@@ -189,7 +237,9 @@ export interface RavenItem {
   gid: string;
   name: string;
   data: {
-    price: { id: string; price: number; entity: "ROLE" | "USER" }[] | number;
+    price:
+      | { id: string; price: number; entity: "ROLE" | "USER" | "ALL" }[]
+      | number;
     description: string;
     inventory: boolean;
     /** -1 == Infinity */

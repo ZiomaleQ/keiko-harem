@@ -375,8 +375,7 @@ client.interactions.handle(
         embeds: msg.embeds,
         components,
       });
-    } catch (e) {
-      console.log(e);
+    } catch (_e) {
       await d.editResponse(
         {
           content:
@@ -694,9 +693,7 @@ client.interactions.handle(
 
     items.data.map((item) =>
       convertItemsToEmbeds(item, guildData.money.currency)
-    ).forEach((field) => {
-      embed.addField(field);
-    });
+    ).forEach((field) => embed.addField(field));
 
     d.reply({
       embeds: [embed],
@@ -741,10 +738,15 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     });
   }
 
+  //TODO HERO SHOP
+
+  await d.defer();
+
   let item: RavenItem | undefined = (await ItemManager.getByName(
     d.guild.id,
     d.option<string>("nazwa"),
-  ))[0];
+  ));
+  const count = d.option<number>("ilosc");
 
   if (item === undefined) {
     item = await ItemManager.getByID(d.option<string>("nazwa"));
@@ -756,8 +758,214 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
       content: "Taki przedmiot nie istnieje...",
     });
   }
-  d.respond({ content: "```json " + JSON.stringify(item) + "```" });
+
+  const guildData = (await GuildManager.getOrCreate(d.guild.id));
+  const userMoney = await MoneyManager.getOrCreate(
+    d.guild.id,
+    d.user.id,
+  );
+
+  const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+
+  let membersItemCost: number | undefined = undefined;
+  let rolesItemCost: number | undefined = undefined;
+  let allItemCost: number | undefined = undefined;
+
+  if (typeof item.data.price === "object") {
+    membersItemCost = item.data.price.find((elt) =>
+      elt.entity === "USER" && elt.id === d.user.id
+    )?.price;
+
+    const rolePrices = item.data.price.filter((elt) => elt.entity === "ROLE");
+    if (rolePrices.length > 0) {
+      const memberRoles = (await d.member!.roles.array()).map((role) =>
+        role.id
+      );
+
+      const memberRolePrices = rolePrices.filter((elt) =>
+        memberRoles.includes(elt.id)
+      );
+
+      if (memberRolePrices.length !== 0) {
+        if (memberRolePrices.length === 1) {
+          rolesItemCost = memberRolePrices[0].price;
+        } else {
+          rolesItemCost = memberRolePrices.reduce((acc, cur) =>
+            acc.price > cur.price
+              ? cur
+              : acc
+          ).price;
+        }
+      }
+    }
+
+    allItemCost = item.data.price.find((elt) => elt.entity === "ALL")!.price;
+  }
+
+  const itemCost = membersItemCost || rolesItemCost || allItemCost ||
+    item.data.price as number;
+
+  if (userAcc.value - (itemCost * count) < 0) {
+    const itemCount = Math.floor(userAcc.value / itemCost);
+    if (itemCount === 0) {
+      return await d.editResponse({
+        content: "Nie stać cię...",
+      });
+    }
+    return await d.editResponse({
+      content:
+        `Nie stać cię na to... Moge zamiast tego sprzedać ci ${itemCount} sztuk. Chcesz tyle kupić?`,
+      components: [{
+        type: "ACTION_ROW",
+        components: [
+          {
+            type: MessageComponentType.Button,
+            label: "Tak",
+            style: ButtonStyle.PRIMARY,
+            customID: `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
+          },
+          {
+            type: MessageComponentType.Button,
+            label: "Nie",
+            style: ButtonStyle.PRIMARY,
+            customID: "cancel",
+          },
+        ],
+      }],
+    });
+  }
+
+  if (count > item.data.stock && item.data.stock !== -1) {
+    if (item.data.stock === 0) {
+      return await d.editResponse({
+        content: "Nie mam nic w magazynie...",
+      });
+    }
+    return await d.editResponse({
+      content:
+        `W magazynie mam tylko ${item.data.stock}. Chcesz kupić wszystkie pozostałe sztuki?`,
+      components: [{
+        type: "ACTION_ROW",
+        components: [
+          {
+            type: MessageComponentType.Button,
+            label: "Tak",
+            style: ButtonStyle.PRIMARY,
+            customID: `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
+          },
+          {
+            type: MessageComponentType.Button,
+            label: "Nie",
+            style: ButtonStyle.PRIMARY,
+            customID: "cancel",
+          },
+        ],
+      }],
+    });
+  }
+
+  const items = userAcc.items;
+
+  const itemIndex = items.findIndex((it) =>
+    it.hash === item!["@metadata"]["@id"]
+  );
+
+  if (itemIndex === -1) {
+    items.push({ hash: item!["@metadata"]["@id"], quantinity: count });
+  } else {
+    items[itemIndex].quantinity = items[itemIndex].quantinity + count;
+  }
+
+  await MoneyManager.update(
+    userAcc,
+    userAcc.value - itemCost * count,
+    items,
+  );
+
+  await d.editResponse({
+    content: `Kupiono: ${item.name} x${count} za ${count * itemCost}${
+      guildData.money.currency || "$"
+    }`,
+  });
 });
+
+client.interactions.handle(
+  "sklep dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    d.showModal({
+      title: "Stwórz przedmiot",
+      customID: "item/create",
+      components: [{
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Nazwa",
+          customID: "name",
+          style: "SHORT",
+          minLength: 3,
+          maxLength: 100,
+        }],
+      }, {
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Opis",
+          customID: "description",
+          style: "PARAGRAPH",
+          minLength: 3,
+          maxLength: 100,
+        }],
+      }, {
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Cena",
+          customID: "price",
+          style: "SHORT",
+        }],
+      }],
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep ekwipunek",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze",
+      });
+    }
+
+    const userMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      d.user.id,
+    );
+
+    const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+    const userItems = await Promise.all(userAcc.items.map(async (elt) => ({
+      item: await ItemManager.getByID(elt.hash),
+      count: elt.quantinity,
+    })));
+
+    const embed = new Embed().setTitle("No hej").addField(
+      "Przedmioty",
+      userItems.length > 0
+        ? userItems.map((elt) => `${elt.item!.name} ${elt.count}x`).join("\n")
+        : "Brak",
+    );
+
+    d.respond({  embeds: [embed] });
+  },
+);
 
 client.interactions.autocomplete("sklep", "*", autocompleteItem);
 
@@ -775,45 +983,6 @@ async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
     "name": "sklep",
     "description": "Zarządzanie przedmiotami!",
     "options": [
-      {
-        "type": "SUB_COMMAND",
-        "name": "kup",
-        "description": "Kup przedmiot",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true,
-            "autocomplete": true
-          },
-          {
-            "type": "INTEGER",
-            "name": "ilosc",
-            "description": "Ilość",
-            "required": true
-          },
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "dodaj",
-        "description": "Dodaj przedmiot do sklepu",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          }
-        ]
-      },
       {
         "type": "SUB_COMMAND",
         "name": "ekwipunek",
@@ -1006,6 +1175,22 @@ client.interactions.handle("*", (d: SlashCommandInteraction) => {
 // );
 
 client.on("interactionCreate", async (i) => {
+  if (i.isModalSubmit()) {
+    if (i.data.custom_id === "item/create") {
+      const name = i.getComponent("name")!.value;
+      const description = i.getComponent("description")!.value;
+      const price = i.getComponent("price")!.value;
+
+      await ItemManager.create({
+        name,
+        data: { description, price: parseFloat(price) },
+        gid: i.guild!.id,
+      });
+      return i.reply("Stworzono przedmiot z nazwą: " + name);
+    }
+    console.log(i);
+  }
+
   if (!i.isMessageComponent()) return;
 
   if (i.data.custom_id === "atak/r") {
