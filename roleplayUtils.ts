@@ -51,5 +51,8 @@ export async function fetchData<T extends any>(
 
   if (response.status >= 400) throw Error(await response.text());
 
+  // deno-lint-ignore no-explicit-any
+  if (response.status === 204) return null as any
+
   return await response.json();
 }

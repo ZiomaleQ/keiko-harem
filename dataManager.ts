@@ -230,6 +230,37 @@ export class ItemManager {
       }),
     );
   }
+
+  static update(
+    data: RavenItem,
+  ): Promise<RavenItem> {
+    return fetchData(
+      "POST",
+      "/items/bulk_docs",
+      JSON.stringify({
+        Commands: [{
+          Id: data["@metadata"]["@id"],
+          Patch: {
+            Script: `this = ${
+              JSON.stringify({
+                name: data.name,
+                data: data.data,
+                gid: data.gid,
+              })
+            };`,
+          },
+          Type: "PATCH",
+        }],
+      }),
+    );
+  }
+
+  static deleteByID(id: string): Promise<null> {
+    return fetchData(
+      "DELETE",
+      `/items/docs?id=${id}`,
+    );
+  }
 }
 
 export interface RavenItem {

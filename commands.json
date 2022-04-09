@@ -427,15 +427,7 @@
       {
         "type": "SUB_COMMAND",
         "name": "dodaj",
-        "description": "Dodaj przedmiot do sklepu",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          }
-        ]
+        "description": "Dodaj przedmiot do sklepu"
       },
       {
         "type": "SUB_COMMAND",
@@ -477,6 +469,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           }
         ]
@@ -490,6 +483,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           }
         ]
@@ -503,6 +497,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           },
           {
@@ -528,6 +523,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           },
           {
@@ -553,6 +549,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           },
           {
@@ -584,6 +581,7 @@
             "type": "STRING",
             "name": "nazwa",
             "description": "Nazwa przedmiotu",
+            "autocomplete": true,
             "required": true
           },
           {

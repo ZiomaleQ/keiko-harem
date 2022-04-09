@@ -942,10 +942,11 @@ client.interactions.handle(
         content: "Nie jesteś w serwerze",
       });
     }
+    const anotherUser = d.option<User | undefined>("osoba");
 
     const userMoney = await MoneyManager.getOrCreate(
       d.guild.id,
-      d.user.id,
+      anotherUser?.id ?? d.user.id,
     );
 
     const userAcc = userMoney.find((elt) => elt.heroID === null)!;
@@ -1033,14 +1034,30 @@ client.interactions.handle(
       });
     }
 
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
     d.showModal({
       title: "Edytuj przedmiot",
-      customID: "item/edit",
+      customID: "item/edit/" + item["@metadata"]["@id"],
       components: [{
         type: "ACTION_ROW",
         components: [{
           type: "TEXT_INPUT",
-          label: "Opis",
+          label: "Opis (Jeśli chcesz zachować poprzedni, zostaw puste)",
           customID: "description",
           style: "PARAGRAPH",
         }],
@@ -1048,11 +1065,379 @@ client.interactions.handle(
         type: "ACTION_ROW",
         components: [{
           type: "TEXT_INPUT",
-          label: "Cena",
+          label: "Cena (Jeśli chcesz zachować poprzednią, zostaw puste)",
           customID: "price",
           style: "SHORT",
         }],
       }],
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep usun",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    await ItemManager.deleteByID(item["@metadata"]["@id"]);
+
+    return d.respond({
+      content: "Pomyślnie usunięto przedmiot o nazwie: " + item.name,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep sprzedaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    await d.defer();
+
+    const count = d.option<number>("ilosc");
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const userMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      d.user.id,
+    );
+
+    const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+    const items = userAcc.items;
+
+    if (!item.data.sell.canSell) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Tego przedmiotu nie można sprzedać...",
+      });
+    }
+
+    const itemIndex = items.findIndex((elt) =>
+      elt.hash === item!["@metadata"]["@id"]
+    );
+    if (itemIndex === -1) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie masz tego przedmiotu...",
+      });
+    }
+
+    let actualCount = count;
+
+    if (items[itemIndex].quantinity <= count) {
+      actualCount = items[itemIndex].quantinity;
+      items.splice(itemIndex, 1);
+    } else {
+      items[itemIndex].quantinity -= count;
+    }
+
+    let membersItemCost: number | undefined = undefined;
+    let rolesItemCost: number | undefined = undefined;
+    let allItemCost: number | undefined = undefined;
+
+    if (typeof item.data.price === "object") {
+      membersItemCost = item.data.price.find((elt) =>
+        elt.entity === "USER" && elt.id === d.user.id
+      )?.price;
+
+      const rolePrices = item.data.price.filter((elt) => elt.entity === "ROLE");
+      if (rolePrices.length > 0) {
+        const memberRoles = (await d.member!.roles.array()).map((role) =>
+          role.id
+        );
+
+        const memberRolePrices = rolePrices.filter((elt) =>
+          memberRoles.includes(elt.id)
+        );
+
+        if (memberRolePrices.length !== 0) {
+          if (memberRolePrices.length === 1) {
+            rolesItemCost = memberRolePrices[0].price;
+          } else {
+            rolesItemCost = memberRolePrices.reduce((acc, cur) =>
+              acc.price > cur.price
+                ? cur
+                : acc
+            ).price;
+          }
+        }
+      }
+
+      allItemCost = item.data.price.find((elt) => elt.entity === "ALL")!.price;
+    }
+
+    const itemCost = membersItemCost || rolesItemCost || allItemCost ||
+      item.data.price as number;
+
+    let value = 0;
+
+    if (typeof item.data.sell.for === "string") {
+      value = (~~item.data.sell.for / 100) * itemCost;
+    } else {
+      value = item.data.sell.for;
+    }
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    if (item.data.stock !== -1) {
+      item.data.stock += actualCount;
+      ItemManager.update(item);
+    }
+
+    await MoneyManager.update(
+      userAcc,
+      userAcc.value + value * actualCount,
+      items,
+    );
+
+    await d.editResponse({
+      content: `Sprzedano: ${item.name} x${actualCount} za ${
+        value * actualCount
+      }${guildData.money.currency || "$"}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep uzyj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const count = d.option<number>("ilosc");
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const userMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      d.user.id,
+    );
+
+    const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+    const items = userAcc.items;
+
+    if (!item.data.inventory) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Tego przedmiotu nie można użyć...",
+      });
+    }
+
+    const itemIndex = items.findIndex((elt) =>
+      elt.hash === item!["@metadata"]["@id"]
+    );
+
+    if (itemIndex === -1) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie masz tego przedmiotu...",
+      });
+    }
+
+    let actualCount = count;
+
+    if (items[itemIndex].quantinity <= count) {
+      actualCount = items[itemIndex].quantinity;
+      items.splice(itemIndex, 1);
+    } else {
+      items[itemIndex].quantinity -= count;
+    }
+
+    await MoneyManager.update(
+      userAcc,
+      userAcc.value,
+      items,
+    );
+
+    await d.editResponse({
+      content: `Użyto: ${item.name} x${actualCount}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep daj",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const count = d.option<number>("ilosc");
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const anotherUser = d.option<User>("osoba");
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
+
+    const userAcc = receiverMoney.find((elt) => elt.heroID === null)!;
+    const items = userAcc.items;
+
+    const itemIndex = items.findIndex((elt) =>
+      elt.hash === item!["@metadata"]["@id"]
+    );
+
+    if (itemIndex === -1) {
+      items.push({ hash: item!["@metadata"]["@id"], quantinity: count });
+    } else {
+      items[itemIndex].quantinity = items[itemIndex].quantinity + count;
+    }
+
+    await MoneyManager.update(
+      userAcc,
+      userAcc.value,
+      items,
+    );
+
+    await d.respond({
+      content: `Dano: ${item.name} x${count}, dla ${anotherUser.toString()}`,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep zabierz",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const count = d.option<number>("ilosc");
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const anotherUser = d.option<User>("osoba");
+    const receiverMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      anotherUser.id,
+    );
+
+    const userAcc = receiverMoney.find((elt) => elt.heroID === null)!;
+    const items = userAcc.items;
+
+    const itemIndex = items.findIndex((elt) =>
+      elt.hash === item!["@metadata"]["@id"]
+    );
+
+    let actualCount = count;
+
+    if (itemIndex === -1) {
+      return d.respond({
+        content: "Ten użytkownik nie ma takiego przedmiotu",
+      });
+    }
+
+    if (items[itemIndex].quantinity <= count) {
+      actualCount = items[itemIndex].quantinity;
+      items.splice(itemIndex, 1);
+    } else {
+      items[itemIndex].quantinity -= count;
+    }
+
+    await MoneyManager.update(
+      userAcc,
+      userAcc.value,
+      items,
+    );
+
+    await d.respond({
+      content:
+        `Zabrano: ${item.name} x${actualCount}, od ${anotherUser.toString()}`,
     });
   },
 );
@@ -1066,155 +1451,6 @@ async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
     value: elt["@metadata"]["@id"],
   })));
 }
-
-/*
-
-  {
-    "name": "sklep",
-    "description": "Zarządzanie przedmiotami!",
-    "options": [
-      {
-        "type": "SUB_COMMAND",
-        "name": "edytuj",
-        "description": "Edytuj przedmiot ze sklepu",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "usun",
-        "description": "Usuń przedmiot ze sklepu",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "sprzedaj",
-        "description": "Sprzedaj przedmiot z ekwipunku",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          },
-          {
-            "type": "INTEGER",
-            "name": "ilosc",
-            "description": "Ilość przedmiotów",
-            "required": true
-          },
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "uzyj",
-        "description": "Użyj przedmiot z ekwipunku",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          },
-          {
-            "type": "INTEGER",
-            "name": "ilosc",
-            "description": "Ilość przedmiotów",
-            "required": true
-          },
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "daj",
-        "description": "Daj komus przedmiot ze sklepu",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          },
-          {
-            "type": "INTEGER",
-            "name": "ilosc",
-            "description": "Ilość przedmiotów",
-            "required": true
-          },
-          {
-            "name": "osoba",
-            "description": "Komu dać?",
-            "type": "USER",
-            "required": true
-          },
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      },
-      {
-        "type": "SUB_COMMAND",
-        "name": "zabierz",
-        "description": "Zabierz komuś przedmiot z ekwipunku",
-        "options": [
-          {
-            "type": "STRING",
-            "name": "nazwa",
-            "description": "Nazwa przedmiotu",
-            "required": true
-          },
-          {
-            "type": "INTEGER",
-            "name": "ilosc",
-            "description": "Ilość przedmiotów",
-            "required": true
-          },
-          {
-            "name": "osoba",
-            "description": "Komu dać?",
-            "type": "USER",
-            "required": true
-          },
-          {
-            "type": "STRING",
-            "name": "postac",
-            "description": "Nazwa postaci",
-            "autocomplete": true
-          }
-        ]
-      }
-    ]
-  }
-
- */
 
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({ content: "Jeszcze nie zrobione, wróć później" });
@@ -1246,6 +1482,23 @@ client.on("interactionCreate", async (i) => {
         gid: i.guild!.id,
       });
       return i.reply("Stworzono przedmiot z nazwą: " + name);
+    }
+
+    if (i.data.custom_id.startsWith("item/edit")) {
+      const itemID = i.data.custom_id.substring("item/edit/".length);
+
+      const item = (await ItemManager.getByID(itemID))!;
+
+      const description = i.getComponent("description")!.value;
+      if (description !== "") {
+        item.data.description = description;
+      }
+      const price = i.getComponent("price")!.value;
+      if (price !== "") {
+        item.data.price = parseFloat(price);
+      }
+
+      await ItemManager.update(item);
     }
   }
 
