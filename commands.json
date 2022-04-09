@@ -574,6 +574,20 @@
       },
       {
         "type": "SUB_COMMAND",
+        "name": "stworz",
+        "description": "Stworz przedmiot",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "nazwa",
+            "description": "Nazwa przedmiotu",
+            "autocomplete": true,
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
         "name": "zabierz",
         "description": "Zabierz komuś przedmiot z ekwipunku",
         "options": [
@@ -601,6 +615,114 @@
             "name": "postac",
             "description": "Nazwa postaci",
             "autocomplete": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND_GROUP",
+        "name": "tag",
+        "description": "Zarządzanie tagami przedmiotu",
+        "options": [
+          {
+            "type": "SUB_COMMAND",
+            "name": "dodaj",
+            "description": "Dodaj tag do przedmiotu",
+            "options": [
+              {
+                "type": "STRING",
+                "name": "nazwa",
+                "description": "Nazwa przedmiotu",
+                "autocomplete": true,
+                "required": true
+              },
+              {
+                "type": "STRING",
+                "name": "tag",
+                "description": "Tag",
+                "autocomplete": true,
+                "required": true
+              }
+            ]
+          },
+          {
+            "type": "SUB_COMMAND",
+            "name": "usun",
+            "description": "Usun tag przedmiotu",
+            "options": [
+              {
+                "type": "STRING",
+                "name": "nazwa",
+                "description": "Nazwa przedmiotu",
+                "autocomplete": true,
+                "required": true
+              },
+              {
+                "type": "STRING",
+                "name": "tag",
+                "description": "Tag",
+                "autocomplete": true,
+                "required": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND_GROUP",
+        "name": "receptura",
+        "description": "Zarządzanie recepturami przedmiotów",
+        "options": [
+          {
+            "type": "SUB_COMMAND",
+            "name": "dodaj",
+            "description": "Dodaj recepture",
+            "options": [
+              {
+                "type": "STRING",
+                "name": "nazwa",
+                "description": "Nazwa (końcowego) przedmiotu",
+                "autocomplete": true,
+                "required": true
+              },
+              {
+                "type": "INTEGER",
+                "name": "wartosc",
+                "description": "Ile przedmiotów wyjdzie?",
+                "required": true
+              },
+              {
+                "type": "STRING",
+                "name": "skladnik-1",
+                "description": "Nazwa przedmiotu",
+                "autocomplete": true,
+                "required": true
+              },
+              {
+                "type": "INTEGER",
+                "name": "wartosc-1",
+                "description": "Ile przedmiotów potrzeba?",
+                "required": true
+              },
+              {
+                "type": "STRING",
+                "name": "skladnik-2",
+                "description": "Nazwa przedmiotu",
+                "autocomplete": true,
+                "required": true
+              },
+              {
+                "type": "INTEGER",
+                "name": "wartosc-2",
+                "description": "Ile przedmiotów potrzeba?",
+                "required": true
+              },
+              {
+                "type": "INTEGER",
+                "name": "koszt",
+                "description": "Ile trzeba dopłacić odliczając cene komponentów?",
+                "required": true
+              }
+            ]
           }
         ]
       }

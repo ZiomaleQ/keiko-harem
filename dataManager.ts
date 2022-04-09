@@ -181,6 +181,20 @@ export class ItemManager {
     return (resp as any).Results;
   }
 
+  static async getTags(gid: string): Promise<string[]> {
+    const resp = await fetchData(
+      "GET",
+      `/items/queries?query=from "@empty" where data.tags.length > 0 and gid == "${gid}" select data.tags`,
+    );
+
+    return [
+      ...(new Set(
+        // deno-lint-ignore no-explicit-any
+        ((resp as any).Results as any[]).flatMap((elt) => elt["data.tags"]),
+      )).values(),
+    ];
+  }
+
   static async getByID(id: string): Promise<RavenItem | undefined> {
     return ((await fetchData(
       "GET",
@@ -217,6 +231,8 @@ export class ItemManager {
           add: data.data?.messages?.add ?? "",
           take: data.data?.messages?.take ?? "",
         },
+        recipes: data.data?.recipes ?? [],
+        tags: data.data?.tags ?? [],
       },
       gid: data.gid!,
       name: data.name!,
@@ -241,13 +257,7 @@ export class ItemManager {
         Commands: [{
           Id: data["@metadata"]["@id"],
           Patch: {
-            Script: `this = ${
-              JSON.stringify({
-                name: data.name,
-                data: data.data,
-                gid: data.gid,
-              })
-            };`,
+            Script: `this.data = ${JSON.stringify(data.data)};`,
           },
           Type: "PATCH",
         }],
@@ -296,6 +306,15 @@ export interface RavenItem {
       add: string;
       take: string;
     };
+    recipes: {
+      item: string;
+      countItem: number;
+      item1: string;
+      countItem1: number;
+      additionalCost: number;
+      result: number;
+    }[];
+    tags: string[];
   };
 }
 

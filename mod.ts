@@ -22,6 +22,7 @@ import {
   SlashCommandInteraction,
   User,
 } from "./deps.ts";
+import { resolveItem } from "./roleplayUtils.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
@@ -738,8 +739,6 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     });
   }
 
-  //TODO HERO SHOP
-
   await d.defer();
 
   let item: RavenItem | undefined = (await ItemManager.getByName(
@@ -766,6 +765,22 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
   );
 
   const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+
+  const tags = [
+    ...new Set((await Promise.all(userAcc.items.map(async (elt) => ({
+      item: await ItemManager.getByID(elt.hash),
+      count: elt.quantinity,
+    })))).flatMap((elt) => elt.item?.data.tags ?? [])).values(),
+  ];
+
+  if (
+    tags.length + item.data.tags.length !==
+      new Set([...tags, ...item.data.tags]).size
+  ) {
+    return await d.editResponse({
+      content: "Masz przedmiot z tym tagiem...",
+    });
+  }
 
   let membersItemCost: number | undefined = undefined;
   let rolesItemCost: number | undefined = undefined;
@@ -962,7 +977,7 @@ client.interactions.handle(
         : "Brak",
     );
 
-    d.respond({ embeds: [embed] });
+    return d.respond({ embeds: [embed] });
   },
 );
 
@@ -1008,6 +1023,25 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
       : item!.data.price + "";
   }
 
+  const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+  async function parseRecipes(): Promise<string> {
+    return (await Promise.all(item!.data.recipes.map(async (elt) => {
+      const component1 = await ItemManager.getByID(elt.item);
+      const component2 = await ItemManager.getByID(elt.item1);
+
+      return item!.data.recipes.map((elt) =>
+        `\`${item!.name}x${elt.result} = ${
+          component1?.name ?? "Usunięty przedmiot"
+        }x${elt.countItem} + ${
+          component2?.name ?? "Usunięty przedmiot"
+        }x${elt.countItem1} + ${elt.additionalCost}${
+          guildData.money.currency || "$"
+        }\``
+      );
+    }))).join("\n");
+  }
+
   return d.respond({
     embeds: [
       new Embed()
@@ -1019,6 +1053,14 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
         ).addField(
           "Koszt",
           parseCost(),
+        ).addField(
+          "Tagi",
+          item.data.tags.length === 0
+            ? "Brak"
+            : item.data.tags.map((elt) => `\`${elt}\``).join(", "),
+        ).addField(
+          "Receptury",
+          item.data.recipes.length === 0 ? "Brak" : await parseRecipes(),
         ),
     ],
   });
@@ -1057,7 +1099,7 @@ client.interactions.handle(
         type: "ACTION_ROW",
         components: [{
           type: "TEXT_INPUT",
-          label: "Opis (Jeśli chcesz zachować poprzedni, zostaw puste)",
+          label: "Opis (zostaw puste jeśli nie chcesz zmieniać)",
           customID: "description",
           style: "PARAGRAPH",
         }],
@@ -1065,7 +1107,7 @@ client.interactions.handle(
         type: "ACTION_ROW",
         components: [{
           type: "TEXT_INPUT",
-          label: "Cena (Jeśli chcesz zachować poprzednią, zostaw puste)",
+          label: "Cena (zostaw puste jeśli nie chcesz zmieniać)",
           customID: "price",
           style: "SHORT",
         }],
@@ -1374,6 +1416,259 @@ client.interactions.handle(
 );
 
 client.interactions.handle(
+  "sklep tag dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    await d.defer();
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const tag = d.option<string>("tag");
+
+    if (item.data.tags.includes(tag)) {
+      return await d.editResponse({
+        content: "Ten przedmiot ma już ten tag...",
+      });
+    }
+
+    item.data.tags.push(tag);
+
+    await ItemManager.update(item);
+
+    d.editResponse({
+      content: `Usunięta tag \`${tag}\` z przedmiotu: \`${item.name}\``,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep tag usun",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    await d.defer();
+
+    let item: RavenItem | undefined = (await ItemManager.getByName(
+      d.guild.id,
+      d.option<string>("nazwa"),
+    ));
+
+    if (item === undefined) {
+      item = await ItemManager.getByID(d.option<string>("nazwa"));
+    }
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    const tag = d.option<string>("tag");
+
+    if (!item.data.tags.includes(tag)) {
+      return await d.editResponse({
+        content: "Ten przedmiot ma już ten tag...",
+      });
+    }
+
+    item.data.tags.splice(item.data.tags.indexOf(tag), 1);
+
+    await ItemManager.update(item);
+
+    d.editResponse({
+      content: `Dodano tag \`${tag}\` do przedmiotu: \`${item.name}\``,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep receptura dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje... (Finalny przedmiot)",
+      });
+    }
+
+    const component1 = await resolveItem(
+      d.guild.id,
+      d.option<string>("skladnik-1"),
+    );
+
+    if (component1 === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje... (Składowa - 1)",
+      });
+    }
+
+    const component2 = await resolveItem(
+      d.guild.id,
+      d.option<string>("skladnik-2"),
+    );
+
+    if (component2 === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje... (Składowa - 2)",
+      });
+    }
+
+    const cost = d.option<number>("koszt");
+    const resultingItemsCount = d.option<number>("wartosc");
+    const component1ItemsCount = d.option<number>("wartosc-1");
+    const component2ItemsCount = d.option<number>("wartosc-2");
+
+    item.data.recipes.push({
+      additionalCost: cost,
+      countItem: component1ItemsCount,
+      countItem1: component2ItemsCount,
+      item: component1["@metadata"]["@id"],
+      item1: component2["@metadata"]["@id"],
+      result: resultingItemsCount,
+    });
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    await ItemManager.update(item);
+
+    return await d.respond({
+      content:
+        `Dodano recepture: \`${item.name}x${resultingItemsCount} = ${component1.name}x${component1ItemsCount} + ${component2.name}x${component2ItemsCount} + ${cost}${
+          guildData.money.currency || "$"
+        }\``,
+    });
+  },
+);
+
+client.interactions.handle(
+  "sklep stworz",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
+
+    if (item === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    if (item.data.recipes.length === 0) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Ten przedmiot nie ma receptur...",
+      });
+    }
+
+    const recipes = item.data.recipes;
+
+    const userMoney = await MoneyManager.getOrCreate(
+      d.guild.id,
+      d.user.id,
+    );
+
+    const userAcc = userMoney.find((elt) => elt.heroID === null)!;
+    const userItems = userAcc.items;
+
+    function hasQuantity(hash: string, count: number): boolean {
+      return ((userItems.find((elt) => elt.hash === hash)?.quantinity) ?? -1) >=
+        count;
+    }
+
+    const recipeUsed = recipes.find((recipe) => {
+      if (recipe.additionalCost > userAcc.value) return false;
+      if (!hasQuantity(recipe.item, recipe.countItem)) return false;
+      if (!hasQuantity(recipe.item1, recipe.countItem1)) return false;
+      return true;
+    });
+
+    if (recipeUsed === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content:
+          "Nie spełniasz żadnej z receptur (pieniądze lub przedmioty)...",
+      });
+    }
+
+    const itemIndex = userItems.findIndex((elt) =>
+      elt.hash === recipeUsed.item
+    );
+
+    if (userItems[itemIndex].quantinity <= recipeUsed.countItem) {
+      userItems.splice(itemIndex, 1);
+    } else {
+      userItems[itemIndex].quantinity -= recipeUsed.countItem;
+    }
+
+    const item1Index = userItems.findIndex((elt) =>
+      elt.hash === recipeUsed.item1
+    );
+
+    if (userItems[item1Index].quantinity <= recipeUsed.countItem) {
+      userItems.splice(item1Index, 1);
+    } else {
+      userItems[item1Index].quantinity -= recipeUsed.countItem;
+    }
+
+    userItems.push({
+      hash: item["@metadata"]["@id"],
+      quantinity: recipeUsed.result,
+    });
+
+    await MoneyManager.update(
+      userAcc,
+      userAcc.value,
+      userItems,
+    );
+
+    d.respond({ content: `Stworzono: ${item.name}x${recipeUsed.result}` });
+  },
+);
+
+client.interactions.handle(
   "sklep zabierz",
   async (d: SlashCommandInteraction) => {
     if (d.user.id !== d.guild?.ownerID) {
@@ -1442,7 +1737,19 @@ client.interactions.handle(
   },
 );
 
-client.interactions.autocomplete("sklep", "*", autocompleteItem);
+client.interactions.autocomplete("sklep", "*", autocomplete);
+
+function autocomplete(d: AutocompleteInteraction) {
+  const name = d.focusedOption.name;
+  switch (name) {
+    case "nazwa":
+    case "skladnik-1":
+    case "skladnik-2":
+      return autocompleteItem(d);
+    case "tag":
+      return autocompleteTag(d);
+  }
+}
 
 async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
   const items = await ItemManager.startWith(d.guild!.id, d.focusedOption.value);
@@ -1452,22 +1759,19 @@ async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
   })));
 }
 
+async function autocompleteTag(d: AutocompleteInteraction): Promise<void> {
+  const tags = (await ItemManager.getTags(d.guild!.id)).filter((elt) =>
+    elt.startsWith(d.focusedOption.value)
+  ).slice(0, 25);
+  await d.autocomplete(tags.map((elt) => ({
+    name: elt,
+    value: elt,
+  })));
+}
+
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({ content: "Jeszcze nie zrobione, wróć później" });
 });
-
-// //TODO HERO AUTOCOMPLETION
-// client.interactions.autocomplete(
-//   "money stan",
-//   "postac",
-//   (d: AutocompleteInteraction) => {
-//     if (d.guild === undefined) return d.autocomplete([]);
-
-//     //TODO HERO FETCH AND GET
-
-//     return d.autocomplete([]);
-//   },
-// );
 
 client.on("interactionCreate", async (i) => {
   if (i.isModalSubmit()) {
@@ -1499,6 +1803,8 @@ client.on("interactionCreate", async (i) => {
       }
 
       await ItemManager.update(item);
+
+      return i.reply("Zaktualizowano przedmiot z nazwą " + item.name);
     }
   }
 
