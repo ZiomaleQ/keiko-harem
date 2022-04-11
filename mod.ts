@@ -1,6 +1,7 @@
 import { config } from "./config.ts";
 import {
   GuildManager,
+  HeroManager,
   ItemManager,
   MoneyManager,
   RavenItem,
@@ -13,16 +14,22 @@ import {
   ButtonStyle,
   CommandClient,
   Embed,
-  EmbedField,
   Intents,
   InteractionChannel,
   InteractionResponseFlags,
+  MessageAttachment,
+  MessageComponentData,
   MessageComponentType,
   Role,
   SlashCommandInteraction,
   User,
+  Webhook,
 } from "./deps.ts";
-import { resolveItem } from "./roleplayUtils.ts";
+import {
+  convertItemsToEmbeds,
+  resolveHero,
+  resolveItem,
+} from "./roleplayUtils.ts";
 import { chunk, genRandom, graphql } from "./utils.ts";
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" });
@@ -499,8 +506,6 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
     anotherUser?.id ?? d.user.id,
   );
 
-  //TODO HERO FETCH AND GET
-
   const guildData = (await GuildManager.getOrCreate(d.guild.id));
 
   const currAcc = money.find((acc) => acc.heroID === null)!;
@@ -698,38 +703,10 @@ client.interactions.handle(
 
     d.reply({
       embeds: [embed],
-      components: [{
-        type: "ACTION_ROW",
-        components: [
-          {
-            type: MessageComponentType.Button,
-            label: "Poprzednia strona",
-            style: ButtonStyle.PRIMARY,
-            customID: "shop/0",
-            disabled: true,
-          },
-          {
-            type: MessageComponentType.Button,
-            label: "Kolejna strona",
-            style: ButtonStyle.PRIMARY,
-            customID: "shop/1",
-            disabled: items.allItems <= items.data.length,
-          },
-        ],
-      }],
+      components: createPagination(items.allItems, 5, 1, "shop"),
     });
   },
 );
-
-function convertItemsToEmbeds(
-  item: RavenItem,
-  guildCurrency: string | null,
-): EmbedField {
-  return {
-    name: item.name + " - " + item.data.price + (guildCurrency || "$"),
-    value: item.data.description,
-  };
-}
 
 client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
   if (d.guild === undefined) {
@@ -830,23 +807,9 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     return await d.editResponse({
       content:
         `Nie stać cię na to... Moge zamiast tego sprzedać ci ${itemCount} sztuk. Chcesz tyle kupić?`,
-      components: [{
-        type: "ACTION_ROW",
-        components: [
-          {
-            type: MessageComponentType.Button,
-            label: "Tak",
-            style: ButtonStyle.PRIMARY,
-            customID: `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
-          },
-          {
-            type: MessageComponentType.Button,
-            label: "Nie",
-            style: ButtonStyle.PRIMARY,
-            customID: "cancel",
-          },
-        ],
-      }],
+      components: confirmationComponent(
+        `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
+      ),
     });
   }
 
@@ -859,23 +822,9 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     return await d.editResponse({
       content:
         `W magazynie mam tylko ${item.data.stock}. Chcesz kupić wszystkie pozostałe sztuki?`,
-      components: [{
-        type: "ACTION_ROW",
-        components: [
-          {
-            type: MessageComponentType.Button,
-            label: "Tak",
-            style: ButtonStyle.PRIMARY,
-            customID: `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
-          },
-          {
-            type: MessageComponentType.Button,
-            label: "Nie",
-            style: ButtonStyle.PRIMARY,
-            customID: "cancel",
-          },
-        ],
-      }],
+      components: confirmationComponent(
+        `buy/${item["@metadata"]["@id"]}/${item.data.stock}`,
+      ),
     });
   }
 
@@ -989,16 +938,9 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
     });
   }
 
-  let item: RavenItem | undefined = (await ItemManager.getByName(
-    d.guild.id,
-    d.option<string>("nazwa"),
-  ));
+  const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
   // const detailed = d.option("szczegolowe") as unknown as boolean;
-
-  if (item === undefined) {
-    item = await ItemManager.getByID(d.option<string>("nazwa"));
-  }
 
   if (item === undefined) {
     return await d.respond({
@@ -1076,14 +1018,7 @@ client.interactions.handle(
       });
     }
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1126,14 +1061,7 @@ client.interactions.handle(
       });
     }
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1164,14 +1092,7 @@ client.interactions.handle(
 
     const count = d.option<number>("ilosc");
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1293,14 +1214,7 @@ client.interactions.handle(
 
     const count = d.option<number>("ilosc");
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1368,14 +1282,7 @@ client.interactions.handle(
 
     const count = d.option<number>("ilosc");
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1427,14 +1334,7 @@ client.interactions.handle(
 
     await d.defer();
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1456,7 +1356,7 @@ client.interactions.handle(
     await ItemManager.update(item);
 
     d.editResponse({
-      content: `Usunięta tag \`${tag}\` z przedmiotu: \`${item.name}\``,
+      content: `Usunięto tag \`${tag}\` z przedmiotu: \`${item.name}\``,
     });
   },
 );
@@ -1473,14 +1373,7 @@ client.interactions.handle(
 
     await d.defer();
 
-    let item: RavenItem | undefined = (await ItemManager.getByName(
-      d.guild.id,
-      d.option<string>("nazwa"),
-    ));
-
-    if (item === undefined) {
-      item = await ItemManager.getByID(d.option<string>("nazwa"));
-    }
+    const item = await resolveItem(d.guild.id, d.option<string>("nazwa"));
 
     if (item === undefined) {
       return await d.respond({
@@ -1737,40 +1630,211 @@ client.interactions.handle(
   },
 );
 
-client.interactions.autocomplete("sklep", "*", autocomplete);
-
-function autocomplete(d: AutocompleteInteraction) {
-  const name = d.focusedOption.name;
-  switch (name) {
-    case "nazwa":
-    case "skladnik-1":
-    case "skladnik-2":
-      return autocompleteItem(d);
-    case "tag":
-      return autocompleteTag(d);
+client.interactions.handle("hero lista", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
   }
-}
 
-async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
-  const items = await ItemManager.startWith(d.guild!.id, d.focusedOption.value);
-  await d.autocomplete(items.map((elt) => ({
-    name: elt.name,
-    value: elt["@metadata"]["@id"],
-  })));
-}
+  const otherUser = d.option<User | undefined>("osoba");
 
-async function autocompleteTag(d: AutocompleteInteraction): Promise<void> {
-  const tags = (await ItemManager.getTags(d.guild!.id)).filter((elt) =>
-    elt.startsWith(d.focusedOption.value)
-  ).slice(0, 25);
-  await d.autocomplete(tags.map((elt) => ({
-    name: elt,
-    value: elt,
-  })));
-}
+  const heroes = await HeroManager.get(d.guild.id, otherUser?.id ?? d.user.id);
+
+  if (heroes.length === 0) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Brak bohaterów",
+    });
+  }
+
+  const embed = new Embed().setTitle("No siemka").addField(
+    "Postacie",
+    heroes.map((elt) =>
+      `\`${elt.name}\` ${
+        elt.data.nickname === "" ? "" : "AKA `" + elt.data.nickname + "`"
+      }`
+    ).join("\n"),
+  );
+
+  return await d.respond({ embeds: [embed] });
+});
+
+client.interactions.handle(
+  "hero stworz",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+    const heroes = await HeroManager.get(d.guild.id, d.user.id);
+
+    if (guildData.maxHeroes < (heroes.length + 1)) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Już masz maksymalną liczbe bohaterów",
+      });
+    }
+
+    HeroManager.create({
+      "@metadata": {
+        "@collection": null,
+        "@id": "",
+      },
+      name: d.option<string>("nazwa"),
+      uid: d.user.id,
+      gid: d.guild.id,
+      data: {
+        nickname: d.option<string | undefined>("nick") || "",
+        account: null,
+        skills: [],
+        runes: [],
+        avatarUrl: "",
+      },
+    });
+
+    return d.respond({
+      content: `Stworzono postać o nazwie \`${d.option<string>("nazwa")}\``,
+    });
+  },
+);
+
+client.interactions.handle("hero usun", async (d: SlashCommandInteraction) => {
+  if (d.guild === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "Nie jesteś w serwerze...",
+    });
+  }
+
+  const hero = await resolveHero(d.guild.id, d.option<string>("postac"));
+  if (hero === undefined) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "No ok ale nie ma takiego bohatera...",
+    });
+  }
+
+  if (hero.uid !== d.user.id) {
+    return await d.respond({
+      flags: InteractionResponseFlags.EPHEMERAL,
+      content: "To nie twój bohater...",
+    });
+  }
+
+  await HeroManager.deleteByID(hero["@metadata"]["@id"]);
+
+  d.respond({ content: `Usunięto bohatera \`${hero.name}\`` });
+});
+
+client.interactions.handle(
+  "hero avatar",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    await d.defer();
+
+    const hero = await resolveHero(d.guild.id, d.option<string>("postac"));
+    if (hero === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "No ok ale nie ma takiego bohatera...",
+      });
+    }
+
+    if (hero.uid !== d.user.id) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "To nie twój bohater...",
+      });
+    }
+
+    // deno-lint-ignore no-explicit-any
+    const attachments = (d.data.resolved as any).attachments;
+    const avatarDiscord = attachments[Object.keys(attachments)[0]];
+    const avatar = await MessageAttachment.load(avatarDiscord.url);
+    const resp = await d.channel!.send({
+      content: "Ustawiam avatar na: ",
+      files: [avatar],
+    });
+
+    hero.data.avatarUrl = resp.attachments[0].url;
+
+    await HeroManager.update(hero);
+
+    await d.respond({ content: "Ustawiono!" });
+  },
+);
+
+client.interactions.handle(
+  "hero udawaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const hero = await resolveHero(d.guild.id, d.option<string>("postac"));
+    if (hero === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "No ok ale nie ma takiego bohatera...",
+      });
+    }
+
+    if (hero.uid !== d.user.id) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "To nie twój bohater...",
+      });
+    }
+
+    const guildData = (await GuildManager.getOrCreate(d.guild.id));
+
+    if (guildData.webhooks[d.channel!.id] === undefined) {
+      const resp = await client.rest.api.channels[d.channel!.id].webhooks.post({
+        name: "Keiko!",
+      });
+
+      const url = `https://discord.com/api/webhooks/${resp.id}/${resp.token}`;
+      guildData.webhooks[d.channel!.id] = url;
+
+      await GuildManager.update(guildData);
+    }
+
+    return await d.showModal({
+      title: "Pisz jako postać",
+      customID: "impostor/" + hero["@metadata"]["@id"],
+      components: [{
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Tekst (Max 2k znaków)",
+          customID: "content",
+          style: "PARAGRAPH",
+        }],
+      }],
+    });
+  },
+);
 
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
-  d.reply({ content: "Jeszcze nie zrobione, wróć później" });
+  d.reply({
+    flags: InteractionResponseFlags.EPHEMERAL,
+    content: "Jeszcze nie zrobione, wróć później",
+  });
 });
 
 client.on("interactionCreate", async (i) => {
@@ -1793,18 +1857,43 @@ client.on("interactionCreate", async (i) => {
 
       const item = (await ItemManager.getByID(itemID))!;
 
-      const description = i.getComponent("description")!.value;
-      if (description !== "") {
-        item.data.description = description;
+      const description = i.getComponent("description")?.value;
+      if (!description) {
+        item.data.description = description!;
       }
-      const price = i.getComponent("price")!.value;
-      if (price !== "") {
-        item.data.price = parseFloat(price);
+      const price = i.getComponent("price")?.value;
+      if (!price) {
+        item.data.price = parseFloat(price!);
       }
 
       await ItemManager.update(item);
 
       return i.reply("Zaktualizowano przedmiot z nazwą " + item.name);
+    }
+
+    if (i.data.custom_id.startsWith("impostor/")) {
+      const heroID = i.data.custom_id.substring("impostor/".length);
+
+      const hero = (await HeroManager.getByID(heroID))!;
+
+      const guildData = (await GuildManager.getOrCreate(i.guild!.id));
+
+      const webhook = await Webhook.fromURL(
+        guildData.webhooks[i.channel!.id],
+        client,
+      );
+
+      const whMessage = {
+        avatar: hero.data.avatarUrl === "" ? undefined : hero.data.avatarUrl,
+        name: hero.name,
+      };
+
+      await webhook.send(i.getComponent("content")!.value, whMessage);
+
+      await i.respond({ content: "Prosz" });
+      setTimeout(() => {
+        i.deleteResponse();
+      }, 1000);
     }
   }
 
@@ -1841,19 +1930,7 @@ client.on("interactionCreate", async (i) => {
 
     return i.respond({
       embeds: [embed],
-      components: [
-        {
-          type: MessageComponentType.ActionRow,
-          components: [
-            {
-              type: MessageComponentType.Button,
-              label: "Jeszcze raz",
-              style: ButtonStyle.PRIMARY,
-              customID: "atak/r",
-            },
-          ],
-        },
-      ],
+      components: replayComponent("atak"),
     });
   }
 
@@ -1886,19 +1963,7 @@ client.on("interactionCreate", async (i) => {
             } w tyłek`,
           ).setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text),
         ],
-        components: [
-          {
-            type: MessageComponentType.ActionRow,
-            components: [
-              {
-                type: MessageComponentType.Button,
-                label: "Jeszcze raz",
-                style: ButtonStyle.PRIMARY,
-                customID: "unik/r",
-              },
-            ],
-          },
-        ],
+        components: replayComponent("unik"),
       });
     } else {
       return i.respond({
@@ -1908,19 +1973,7 @@ client.on("interactionCreate", async (i) => {
             `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
           ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text),
         ],
-        components: [
-          {
-            type: MessageComponentType.ActionRow,
-            components: [
-              {
-                type: MessageComponentType.Button,
-                label: "Jeszcze raz",
-                style: ButtonStyle.PRIMARY,
-                customID: "unik/r",
-              },
-            ],
-          },
-        ],
+        components: replayComponent("unik"),
       });
     }
   }
@@ -1978,28 +2031,116 @@ client.on("interactionCreate", async (i) => {
 
     i.message.edit({
       embeds: [embed],
-      components: [{
-        type: "ACTION_ROW",
-        components: [
-          {
-            type: MessageComponentType.BUTTON,
-            label: "Poprzednia strona",
-            style: ButtonStyle.PRIMARY,
-            customID: "shop/" + (page - 1),
-            disabled: (page - 1) < 0,
-          },
-          {
-            type: MessageComponentType.BUTTON,
-            label: "Kolejna strona",
-            style: ButtonStyle.PRIMARY,
-            customID: "shop/" + (page + 1),
-            disabled: items.allItems - (items.data.length + page * 5) <= 0,
-          },
-        ],
-      }],
+      components: createPagination(items.allItems, 5, page, "shop"),
     });
   }
 });
 
 client.on("debug", console.log);
 await client.connect(undefined, Intents.NonPrivileged);
+
+function createPagination(
+  allItems: number,
+  perPage: number,
+  currentPage: number,
+  cid: string,
+): MessageComponentData[] {
+  return [{
+    type: "ACTION_ROW",
+    components: [
+      {
+        type: MessageComponentType.BUTTON,
+        label: "Poprzednia strona",
+        style: ButtonStyle.PRIMARY,
+        customID: `${cid}/${currentPage - 1}`,
+        disabled: (currentPage - 1) < 0,
+      },
+      {
+        type: MessageComponentType.BUTTON,
+        label: "Kolejna strona",
+        style: ButtonStyle.PRIMARY,
+        customID: `${cid}/${currentPage + 1}`,
+        disabled: allItems - (allItems + perPage * 5) <= 0,
+      },
+    ],
+  }];
+}
+
+function replayComponent(cid: string): MessageComponentData[] {
+  return [
+    {
+      type: MessageComponentType.ActionRow,
+      components: [
+        {
+          type: MessageComponentType.Button,
+          label: "Jeszcze raz",
+          style: ButtonStyle.PRIMARY,
+          customID: cid + "/r",
+        },
+      ],
+    },
+  ];
+}
+
+function confirmationComponent(cid: string): MessageComponentData[] {
+  return [{
+    type: "ACTION_ROW",
+    components: [
+      {
+        type: MessageComponentType.Button,
+        label: "Tak",
+        style: ButtonStyle.PRIMARY,
+        customID: cid,
+      },
+      {
+        type: MessageComponentType.Button,
+        label: "Nie",
+        style: ButtonStyle.PRIMARY,
+        customID: "cancel",
+      },
+    ],
+  }];
+}
+
+client.interactions.autocomplete("*", "*", autocomplete);
+
+function autocomplete(d: AutocompleteInteraction) {
+  const name = d.focusedOption.name;
+  switch (name) {
+    case "nazwa":
+    case "skladnik-1":
+    case "skladnik-2":
+      return autocompleteItem(d);
+    case "tag":
+      return autocompleteTag(d);
+    case "postac":
+      return autocompleteHero(d);
+  }
+}
+
+async function autocompleteItem(d: AutocompleteInteraction): Promise<void> {
+  const items = await ItemManager.startWith(d.guild!.id, d.focusedOption.value);
+  await d.autocomplete(items.map((elt) => ({
+    name: elt.name,
+    value: elt["@metadata"]["@id"],
+  })));
+}
+
+async function autocompleteTag(d: AutocompleteInteraction): Promise<void> {
+  const tags = (await ItemManager.getTags(d.guild!.id)).filter((elt) =>
+    elt.startsWith(d.focusedOption.value)
+  ).slice(0, 25);
+  await d.autocomplete(tags.map((elt) => ({
+    name: elt,
+    value: elt,
+  })));
+}
+
+async function autocompleteHero(d: AutocompleteInteraction): Promise<void> {
+  const heroes =
+    (await HeroManager.startWith(d.guild!.id, d.focusedOption.value));
+  await d.autocomplete(heroes.map((elt) => ({
+    name: elt.name,
+    value: elt["@metadata"]["@id"],
+  })));
+}

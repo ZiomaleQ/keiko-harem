@@ -1,5 +1,6 @@
 import { config } from "./config.ts";
-import { ItemManager, RavenItem } from "./dataManager.ts";
+import { HeroManager, ItemManager, RavenHero, RavenItem } from "./dataManager.ts";
+import { EmbedField } from "./deps.ts";
 
 export interface Item {
   id: number;
@@ -72,4 +73,30 @@ export async function resolveItem(
   }
 
   return item;
+}
+
+export async function resolveHero(
+  gid: string,
+  name: string,
+): Promise<RavenHero | undefined> {
+  let hero: RavenHero | undefined = (await HeroManager.getByName(
+    gid,
+    name,
+  ));
+
+  if (hero === undefined) {
+    hero = await HeroManager.getByID(name);
+  }
+
+  return hero;
+}
+
+export function convertItemsToEmbeds(
+  item: RavenItem,
+  guildCurrency: string | null,
+): EmbedField {
+  return {
+    name: item.name + " - " + item.data.price + (guildCurrency || "$"),
+    value: item.data.description,
+  };
 }

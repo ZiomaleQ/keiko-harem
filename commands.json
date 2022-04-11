@@ -349,8 +349,12 @@
             "name": "nazwa",
             "description": "Jak ma nazywać się postać?",
             "type": "STRING",
-            "required": true,
-            "autocomplete": true
+            "required": true
+          },
+          {
+            "name": "nick",
+            "description": "Nick postaci",
+            "type": "STRING"
           }
         ]
       },
@@ -360,7 +364,7 @@
         "description": "Usuń postać",
         "options": [
           {
-            "name": "nazwa",
+            "name": "postac",
             "description": "Nazwa postaci",
             "type": "STRING",
             "required": true,
@@ -371,7 +375,34 @@
       {
         "type": "SUB_COMMAND",
         "name": "lista",
-        "description": "Lista twoich postaci"
+        "description": "Lista twoich postaci",
+        "options": [
+          {
+            "name": "osoba",
+            "description": "Kogo sprawdzić?",
+            "type": "USER"
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "avatar",
+        "description": "Ustaw avatar postaci",
+        "options": [
+          {
+            "name": "avatar",
+            "description": "Avatar postaci",
+            "type": 11,
+            "required": true
+          },
+          {
+            "name": "postac",
+            "description": "Nazwa postaci",
+            "type": "STRING",
+            "required": true,
+            "autocomplete": true
+          }
+        ]
       },
       {
         "type": "SUB_COMMAND",
@@ -379,7 +410,7 @@
         "description": "Pisz jako postać",
         "options": [
           {
-            "name": "name",
+            "name": "postac",
             "description": "Nazwa postaci",
             "type": "STRING",
             "required": true,

@@ -26,6 +26,7 @@ export class GuildManager {
       "@metadata": { "@collection": null, "@id": "" },
       gid: gid,
       maxHeroes: 1,
+      webhooks: {},
       money: { currency: null, startingMoney: 0 },
       xp: { perLevel: 100, starting: 100 },
     };
@@ -40,6 +41,29 @@ export class GuildManager {
 
     return (await this.create(data))[0]!;
   }
+
+  static update(data: RavenGuild) {
+    return fetchData(
+      "POST",
+      "/guild/bulk_docs",
+      JSON.stringify({
+        Commands: [{
+          Id: data["@metadata"]["@id"],
+          Patch: {
+            Script: `${
+              Object.keys(data).map((elt) =>
+                elt !== "@metadata"
+                  // deno-lint-ignore no-explicit-any
+                  ? `this.${elt} = ${JSON.stringify((data as any)[elt])}`
+                  : null
+              ).filter((elt) => elt).join(";")
+            };`,
+          },
+          Type: "PATCH",
+        }],
+      }),
+    );
+  }
 }
 
 export interface RavenGuild {
@@ -47,6 +71,7 @@ export interface RavenGuild {
   gid: string;
   maxHeroes: number;
   money: { currency: string | null; startingMoney: number };
+  webhooks: { [index: string]: string };
   xp: { perLevel: number; starting: number };
 }
 
@@ -318,19 +343,92 @@ export interface RavenItem {
   };
 }
 
-// export class HeroManager {
-//   static async get(owner: string): Promise<Hero> {
-//     return await fetchData("GET", `/hero?where=(owner,like,${owner})`);
-//   }
-// }
+export class HeroManager {
+  static async get(gid: string, uid: string): Promise<RavenHero[]> {
+    const resp = await fetchData(
+      "GET",
+      `/hero/queries?query=from "@empty" where gid == "${gid}" and uid == "${uid}"`,
+    );
 
-// export interface Hero {
-//   id: number;
-//   /** JSON */
-//   data: string;
-//   owner: string;
-//   /** DB ID*/
-//   guildID: number;
-//   /** JSON */
-//   attachments: string;
-// }
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results;
+  }
+
+  static async getByName(
+    gid: string,
+    name: string,
+  ): Promise<RavenHero | undefined> {
+    const resp = await fetchData(
+      "GET",
+      `/hero/queries?query=from "@empty" where gid == "${gid}" and name == "${name}"`,
+    );
+
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results[0];
+  }
+
+  static async getByID(id: string): Promise<RavenHero | undefined> {
+    return ((await fetchData(
+      "GET",
+      `/hero/docs?id=${id}`,
+      // deno-lint-ignore no-explicit-any
+    )) as any).Results[0];
+  }
+
+  static async create(data: RavenHero) {
+    return await fetchData(
+      "POST",
+      "/hero/bulk_docs",
+      JSON.stringify({ Commands: [{ Document: data, Id: "", Type: "PUT" }] }),
+    );
+  }
+
+  static async startWith(gid: string, str: string): Promise<RavenHero[]> {
+    const resp = await fetchData(
+      "GET",
+      `/hero/queries?query=from "@empty" where gid == "${gid}" and startsWith(name, "${str}") limit 25`,
+    );
+
+    // deno-lint-ignore no-explicit-any
+    return (resp as any).Results;
+  }
+
+  static update(
+    data: RavenHero,
+  ): Promise<RavenHero> {
+    return fetchData(
+      "POST",
+      "/hero/bulk_docs",
+      JSON.stringify({
+        Commands: [{
+          Id: data["@metadata"]["@id"],
+          Patch: {
+            Script: `this.data = ${JSON.stringify(data.data)};`,
+          },
+          Type: "PATCH",
+        }],
+      }),
+    );
+  }
+
+  static deleteByID(id: string): Promise<RavenHero> {
+    return fetchData(
+      "DELETE",
+      `/hero/docs?id=${id}`,
+    );
+  }
+}
+
+export interface RavenHero {
+  "@metadata": Metadata;
+  uid: string;
+  gid: string;
+  name: string;
+  data: {
+    nickname: string;
+    account: string | null;
+    skills: [];
+    runes: [];
+    avatarUrl: string;
+  };
+}
