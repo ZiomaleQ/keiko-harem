@@ -151,6 +151,13 @@ export class MoneyManager {
       }),
     );
   }
+
+  static deleteByID(id: string): Promise<null> {
+    return fetchData(
+      "DELETE",
+      `/money/docs?id=${id}`,
+    );
+  }
 }
 
 export interface RavenMoney {

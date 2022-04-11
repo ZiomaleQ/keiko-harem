@@ -1,5 +1,10 @@
 import { config } from "./config.ts";
-import { HeroManager, ItemManager, RavenHero, RavenItem } from "./dataManager.ts";
+import {
+  HeroManager,
+  ItemManager,
+  RavenHero,
+  RavenItem,
+} from "./dataManager.ts";
 import { EmbedField } from "./deps.ts";
 
 export interface Item {
@@ -77,8 +82,9 @@ export async function resolveItem(
 
 export async function resolveHero(
   gid: string,
-  name: string,
+  name: string | undefined,
 ): Promise<RavenHero | undefined> {
+  if (name === undefined) return undefined;
   let hero: RavenHero | undefined = (await HeroManager.getByName(
     gid,
     name,
