@@ -179,7 +179,7 @@ export class ItemManager {
   ): Promise<{ allItems: number; data: RavenItem[] }> {
     const resp = await fetchData(
       "GET",
-      `/items/queries?query=from "@empty" where gid == "${gid}" order by data.price ${
+      `/items/queries?query=from "@empty" where gid == "${gid}" order by data.price as long ${
         page === -1 ? "" : "limit " + page * 5 + " ,5"
       }`,
     );
