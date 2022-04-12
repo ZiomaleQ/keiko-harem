@@ -1701,10 +1701,12 @@ client.interactions.handle(
       });
     }
 
-    const component2 = await resolveItem(
-      d.guild.id,
-      d.option<string>("skladnik-2"),
-    );
+    const component2 = d.option<string>("skladnik-2") === undefined
+      ? undefined
+      : await resolveItem(
+        d.guild.id,
+        d.option<string>("skladnik-2"),
+      );
 
     const cost = d.option<number>("koszt");
     const resultingItemsCount = d.option<number>("wartosc");
