@@ -758,5 +758,35 @@
         ]
       }
     ]
+  },
+  {
+    "name": "settings",
+    "description": "Zarządzanie ustawieniami",
+    "options": [
+      {
+        "type": "SUB_COMMAND",
+        "name": "role",
+        "description": "Zarządzanie rolami",
+        "options": [
+          {
+            "name": "modrole",
+            "description": "Rola moderacyjna",
+            "type": "ROLE"
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "hero",
+        "description": "Zarządzanie ustawieniami postaci",
+        "options": [
+          {
+            "name": "max",
+            "description": "Max postaci",
+            "type": "INTEGER"
+          }
+        ]
+      }
+    ]
   }
 ]

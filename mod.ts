@@ -17,9 +17,11 @@ import {
   Intents,
   InteractionChannel,
   InteractionResponseFlags,
+  Member,
   MessageAttachment,
   MessageComponentData,
   MessageComponentType,
+  PermissionFlags,
   Role,
   SlashCommandInteraction,
   User,
@@ -253,10 +255,13 @@ client.interactions.handle("unik", (d: SlashCommandInteraction) => {
 client.interactions.handle(
   "autorole stworz",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
       return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -293,10 +298,13 @@ client.interactions.handle(
 client.interactions.handle(
   "autorole dodaj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -397,10 +405,13 @@ client.interactions.handle(
 client.interactions.handle(
   "autorole usun",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1044,10 +1055,13 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
 client.interactions.handle(
   "sklep dodaj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1209,10 +1223,13 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
 client.interactions.handle(
   "sklep edytuj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1252,10 +1269,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep usun",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1495,10 +1515,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep daj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1559,10 +1582,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep tag dodaj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1598,10 +1624,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep tag usun",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1637,10 +1666,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep receptura dodaj",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -1812,10 +1844,13 @@ client.interactions.handle(
 client.interactions.handle(
   "sklep zabierz",
   async (d: SlashCommandInteraction) => {
-    if (d.user.id !== d.guild?.ownerID) {
-      return await d.respond({
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Nie jesteś właścicielem",
+        content: "Nie masz uprawnienień",
       });
     }
 
@@ -2090,6 +2125,46 @@ client.interactions.handle(
   },
 );
 
+client.interactions.handle(
+  "settings role",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const role = d.option<Role | undefined>("modrole");
+    const guildData = (await GuildManager.getOrCreate(d.guild!.id));
+
+    guildData.modrole = role?.id || "";
+    await GuildManager.update(guildData);
+
+    d.respond({ content: "Zaktualizowano ustawienia" });
+  },
+);
+
+client.interactions.handle(
+  "settings hero",
+  async (d: SlashCommandInteraction) => {
+    if (d.user.id !== d.guild?.ownerID) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś właścicielem",
+      });
+    }
+
+    const number = d.option<number | undefined>("max");
+    const guildData = (await GuildManager.getOrCreate(d.guild!.id));
+
+    guildData.maxHeroes = number ?? 1;
+    await GuildManager.update(guildData);
+
+    d.respond({ content: "Zaktualizowano ustawienia" });
+  },
+);
+
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({
     flags: InteractionResponseFlags.EPHEMERAL,
@@ -2298,6 +2373,25 @@ client.on("interactionCreate", async (i) => {
 
 client.on("debug", console.log);
 await client.connect(undefined, Intents.NonPrivileged);
+
+async function hasPerms(member: Member): Promise<boolean> {
+  const roles = await member.roles.array();
+  const guildData = (await GuildManager.getOrCreate(member.guild!.id));
+
+  if (member.guild.ownerID === member.id) {
+    return true;
+  }
+
+  if (member.permissions.has(PermissionFlags.ADMINISTRATOR)) {
+    return true;
+  }
+
+  if (roles.find((elt) => elt.id === guildData.modrole)) {
+    return true;
+  }
+
+  return false;
+}
 
 function createPagination(
   allItems: number,

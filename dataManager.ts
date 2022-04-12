@@ -27,6 +27,7 @@ export class GuildManager {
       gid: gid,
       maxHeroes: 1,
       webhooks: {},
+      modrole: "",
       money: { currency: null, startingMoney: 0 },
       xp: { perLevel: 100, starting: 100 },
     };
@@ -72,6 +73,7 @@ export interface RavenGuild {
   maxHeroes: number;
   money: { currency: string | null; startingMoney: number };
   webhooks: { [index: string]: string };
+  modrole: string;
   xp: { perLevel: number; starting: number };
 }
 
