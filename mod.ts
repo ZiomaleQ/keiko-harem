@@ -43,12 +43,12 @@ client.on("ready", async () => {
     assert: { type: "json" },
   });
 
-  // if (commands.size != keikoCommands.default.length) {
+  if (commands.size != keikoCommands.default.length) {
     console.log("Updated commands");
     client.interactions.commands.bulkEdit(
       (keikoCommands.default) as ApplicationCommandPartial[],
     );
-  // }
+  }
 
   console.log("Hi, I'm " + client.user?.tag);
 });
@@ -1182,16 +1182,20 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
   async function parseRecipes(): Promise<string> {
     return (await Promise.all(item!.data.recipes.map(async (elt) => {
       const component1 = await ItemManager.getByID(elt.item);
-      const component2 = await ItemManager.getByID(elt.item1);
+      const component2 = elt.item1 === null
+        ? null
+        : await ItemManager.getByID(elt.item1);
 
       return item!.data.recipes.map((elt) =>
         `\`${item!.name}x${elt.result} = ${
           component1?.name ?? "Usunięty przedmiot"
         }x${elt.countItem} + ${
-          component2?.name ?? "Usunięty przedmiot"
-        }x${elt.countItem1} + ${elt.additionalCost}${
-          guildData.money.currency || "$"
-        }\``
+          component2 === null
+            ? "Powietrze"
+            : (component2?.name ?? "Usunięty przedmiot")
+        }${
+          component2 === null ? "" : "x" + elt.countItem1
+        } + ${elt.additionalCost}${guildData.money.currency || "$"}\``
       );
     }))).join("\n");
   }
