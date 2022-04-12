@@ -177,8 +177,7 @@
           {
             "name": "kanał",
             "description": "Kanał na który wysłać wiadomość",
-            "type": "CHANNEL",
-            "required": false
+            "type": "CHANNEL"
           }
         ]
       }
@@ -735,23 +734,21 @@
                 "required": true
               },
               {
-                "type": "STRING",
-                "name": "skladnik-2",
-                "description": "Nazwa przedmiotu",
-                "autocomplete": true,
-                "required": true
-              },
-              {
-                "type": "INTEGER",
-                "name": "wartosc-2",
-                "description": "Ile przedmiotów potrzeba?",
-                "required": true
-              },
-              {
                 "type": "INTEGER",
                 "name": "koszt",
                 "description": "Ile trzeba dopłacić odliczając cene komponentów?",
                 "required": true
+              },
+              {
+                "type": "STRING",
+                "name": "skladnik-2",
+                "description": "Nazwa przedmiotu",
+                "autocomplete": true
+              },
+              {
+                "type": "INTEGER",
+                "name": "wartosc-2",
+                "description": "Ile przedmiotów potrzeba?"
               }
             ]
           }

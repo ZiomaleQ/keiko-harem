@@ -43,12 +43,12 @@ client.on("ready", async () => {
     assert: { type: "json" },
   });
 
-  if (commands.size != keikoCommands.default.length) {
+  // if (commands.size != keikoCommands.default.length) {
     console.log("Updated commands");
     client.interactions.commands.bulkEdit(
       (keikoCommands.default) as ApplicationCommandPartial[],
     );
-  }
+  // }
 
   console.log("Hi, I'm " + client.user?.tag);
 });
@@ -1687,7 +1687,7 @@ client.interactions.handle(
 
     const component1 = await resolveItem(
       d.guild.id,
-      d.option<string>("skladnik-1"),
+      d.option<string | undefined>("skladnik-1") ?? "",
     );
 
     if (component1 === undefined) {
@@ -1702,24 +1702,19 @@ client.interactions.handle(
       d.option<string>("skladnik-2"),
     );
 
-    if (component2 === undefined) {
-      return await d.respond({
-        flags: InteractionResponseFlags.EPHEMERAL,
-        content: "Taki przedmiot nie istnieje... (Składowa - 2)",
-      });
-    }
-
     const cost = d.option<number>("koszt");
     const resultingItemsCount = d.option<number>("wartosc");
     const component1ItemsCount = d.option<number>("wartosc-1");
-    const component2ItemsCount = d.option<number>("wartosc-2");
+    const component2ItemsCount = d.option<number | undefined>("wartosc-2");
 
     item.data.recipes.push({
       additionalCost: cost,
       countItem: component1ItemsCount,
-      countItem1: component2ItemsCount,
+      countItem1: component2ItemsCount === undefined
+        ? null
+        : component2ItemsCount,
       item: component1["@metadata"]["@id"],
-      item1: component2["@metadata"]["@id"],
+      item1: component2 === undefined ? null : component2["@metadata"]["@id"],
       result: resultingItemsCount,
     });
 
@@ -1729,9 +1724,11 @@ client.interactions.handle(
 
     return await d.respond({
       content:
-        `Dodano recepture: \`${item.name}x${resultingItemsCount} = ${component1.name}x${component1ItemsCount} + ${component2.name}x${component2ItemsCount} + ${cost}${
-          guildData.money.currency || "$"
-        }\``,
+        `Dodano recepture: \`${item.name}x${resultingItemsCount} = ${component1.name}x${component1ItemsCount} ${
+          component2 === undefined
+            ? ""
+            : `+ ${component2.name}x${component2ItemsCount}`
+        } + ${cost}${guildData.money.currency || "$"}\``,
     });
   },
 );
@@ -1790,7 +1787,12 @@ client.interactions.handle(
     const recipeUsed = recipes.find((recipe) => {
       if (recipe.additionalCost > userAcc.value) return false;
       if (!hasQuantity(recipe.item, recipe.countItem)) return false;
-      if (!hasQuantity(recipe.item1, recipe.countItem1)) return false;
+      if (
+        recipe.item1 !== null && !hasQuantity(recipe.item1, recipe.countItem1!)
+      ) {
+        return false;
+      }
+
       return true;
     });
 

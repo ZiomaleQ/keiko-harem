@@ -343,8 +343,8 @@ export interface RavenItem {
     recipes: {
       item: string;
       countItem: number;
-      item1: string;
-      countItem1: number;
+      item1: string | null;
+      countItem1: number | null;
       additionalCost: number;
       result: number;
     }[];
