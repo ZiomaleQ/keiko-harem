@@ -881,7 +881,7 @@ client.interactions.handle(
 
     d.reply({
       embeds: [embed],
-      components: createPagination(items.allItems, 5, 1, "shop"),
+      components: createPagination(items.allItems, 5, 0, "shop"),
     });
   },
 );
@@ -2422,7 +2422,7 @@ function createPagination(
         label: "Kolejna strona",
         style: ButtonStyle.PRIMARY,
         customID: `${cid}/${currentPage + 1}`,
-        disabled: allItems - (allItems + perPage * 5) <= 0,
+        disabled: allItems - (allItems + perPage * 5) >= 0,
       },
     ],
   }];
