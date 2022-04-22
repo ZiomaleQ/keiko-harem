@@ -2229,27 +2229,17 @@ client.on("interactionCreate", async (i) => {
 
     const okay = genRandom(0, 40) + data[1];
     const lvl = data[0] - 1;
-    let dmg = genRandom(0, lvl * 5) + lvl * 10 + data[2] + 30;
 
-    const crit = data[3];
-    const critVal = data[4];
-    const goCrit = (genRandom(0, 100) > crit && crit > 0) || crit == 100;
+    const [crit, dmg] = calculateDamage(
+      lvl,
+      data[2],
+      data[3],
+      data[4],
+    );
 
-    if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
+    const embed = generateAttaackEmbed(okay, crit, dmg);
 
-    const embed = new Embed().setTitle("No siemka");
-
-    if (okay >= 15) {
-      embed.addField(
-        "Informacje:",
-        `[${okay}] Trafiłeś${
-          goCrit ? " krytycznie" : ""
-        }, zadałeś ${dmg} obrażeń.`,
-      ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text);
-    } else {
-      embed.addField("Informacje:", `[${okay}] Niestety, atak się nie udał...`)
-        .setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text);
-    }
+    embed.setFooter(i.message.embeds[0].footer!.text);
 
     return i.respond({
       embeds: [embed],
@@ -2270,35 +2260,30 @@ client.on("interactionCreate", async (i) => {
     dmg = Math.floor(dmg * (0.8 + (genRandom(0, 20) / 100)));
 
     const okay = genRandom(1, 100);
+    const pvpPoints = Math.floor(okay / 2.5);
+
+    const embed = new Embed().setTitle("No siemka");
 
     if (okay > snek) {
       if (armor > 0) {
-        dmg = dmg * (100 / (100 + armor));
+        dmg = Math.floor(dmg * (100 / (100 + armor)));
       }
-      return i.respond({
-        embeds: [
-          new Embed().setTitle("No siemka").addField(
-            "Informacje:",
-            `[${
-              Math.floor(okay / 2.5)
-            }] Niestety, unik się nie udał...\n Otrzymałeś od życia ${
-              Math.floor(dmg)
-            } w tyłek`,
-          ).setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text),
-        ],
-        components: replayComponent("unik"),
-      });
+
+      embed.addField(
+        "Informacje:",
+        `[${pvpPoints}] Niestety, unik się nie udał...\n Otrzymałeś od życia ${dmg} w tyłek`,
+      ).setColor("#ff0000").setFooter(i.message.embeds[0].footer!.text);
     } else {
-      return i.respond({
-        embeds: [
-          new Embed().setTitle("No siemka").addField(
-            "Informacje:",
-            `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
-          ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text),
-        ],
-        components: replayComponent("unik"),
-      });
+      embed.addField(
+        "Informacje:",
+        `[${pvpPoints}] Twój unik się udał!`,
+      ).setColor("#00ff00").setFooter(i.message.embeds[0].footer!.text);
     }
+
+    i.respond({
+      embeds: [embed],
+      components: replayComponent("unik"),
+    });
   }
 
   if (i.data.custom_id.startsWith("a/")) {
