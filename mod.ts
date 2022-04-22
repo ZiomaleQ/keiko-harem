@@ -110,30 +110,51 @@ client.interactions.handle("anime", async (d: SlashCommandInteraction) => {
   });
 });
 
-client.interactions.handle("atak", (d: SlashCommandInteraction) => {
-  const okay = genRandom(0, 40) + ~~d.option<number>("modif");
-  const lvl = d.option<number>("lvl") - 1;
-  let dmg = genRandom(0, lvl * 5) + lvl * 10 + ~~d.option<number>("dmg") + 30;
-
-  const crit = ~~d.option<number>("krytyczne");
-  const critVal = ~~d.option<number>("wartosc-kryt");
-  const goCrit = (genRandom(0, 100) > crit && crit > 0) || crit == 100;
+function calculateDamage(
+  lvl: number,
+  ad: number,
+  crit: number,
+  critVal: number,
+): [boolean, number] {
+  let dmg = genRandom(0, lvl * 5) + lvl * 10 + ad + 30;
+  const goCrit = crit == 100 || (genRandom(0, 100) > crit && crit > 0);
 
   if (goCrit) dmg *= critVal <= 0 ? 2 : critVal / 100;
 
-  const embed = new Embed().setTitle("No siemka");
+  return [goCrit, dmg];
+}
+
+function generateAttaackEmbed(okay: number, crit: boolean, dmg: number): Embed {
+  const embed = new Embed().setTitle("No siemka").setColor(
+    okay >= 15 ? "#00ff00" : "#ff0000",
+  );
+
+  let message = `[${okay}]`;
 
   if (okay >= 15) {
-    embed.addField(
-      "Informacje:",
-      `[${okay}] Trafiłeś${
-        goCrit ? " krytycznie" : ""
-      }, zadałeś ${dmg} obrażeń.`,
-    ).setColor("#00ff00");
+    message += " Trafiłeś" + crit
+      ? " krytycznie"
+      : "" + `, zadałeś ${dmg} obrażeń.`;
   } else {
-    embed.addField("Informacje:", `[${okay}] Niestety, atak się nie udał...`)
-      .setColor("#ff0000");
+    message += " Niestety, atak się nie udał...";
   }
+
+  embed.addField("Informacje", message);
+
+  return embed;
+}
+
+client.interactions.handle("atak", (d: SlashCommandInteraction) => {
+  const okay = genRandom(0, 40) + ~~d.option<number>("modif");
+  const lvl = d.option<number>("lvl") - 1;
+  const [crit, dmg] = calculateDamage(
+    lvl,
+    ~~d.option<number>("dmg"),
+    ~~d.option<number>("krytyczne"),
+    ~~d.option<number>("wartosc-kryt"),
+  );
+
+  const embed = generateAttaackEmbed(okay, crit, dmg);
 
   embed.setFooter(
     `${~~d.option<number>("lvl")}|${~~d.option<number>("modif")}|${~~d.option<
@@ -145,19 +166,7 @@ client.interactions.handle("atak", (d: SlashCommandInteraction) => {
 
   d.respond({
     embeds: [embed],
-    components: [
-      {
-        type: MessageComponentType.ActionRow,
-        components: [
-          {
-            type: MessageComponentType.Button,
-            label: "Jeszcze raz",
-            style: ButtonStyle.PRIMARY,
-            customID: "atak/r",
-          },
-        ],
-      },
-    ],
+    components: replayComponent("atak"),
   });
 });
 
@@ -197,59 +206,30 @@ client.interactions.handle("unik", (d: SlashCommandInteraction) => {
   dmg = Math.floor(dmg * (0.8 + (genRandom(0, 20) / 100)));
 
   const okay = genRandom(1, 100);
+  const pvpPoints = Math.floor(okay / 2.5);
+
+  const embed = new Embed().setTitle("No siemka");
 
   if (okay > snek) {
     if (armor > 0) {
-      dmg = dmg * (100 / (100 + armor));
+      dmg = Math.floor(dmg * (100 / (100 + armor)));
     }
-    d.respond({
-      embeds: [
-        new Embed().setTitle("No siemka").addField(
-          "Informacje:",
-          `[${
-            Math.floor(okay / 2.5)
-          }] Niestety, unik się nie udał...\n Otrzymałeś od życia ${
-            Math.floor(dmg)
-          } w tyłek`,
-        ).setColor("#ff0000").setFooter(`${snek}|${dmg}|${armor}`),
-      ],
-      components: [
-        {
-          type: MessageComponentType.ActionRow,
-          components: [
-            {
-              type: MessageComponentType.Button,
-              label: "Jeszcze raz",
-              style: ButtonStyle.PRIMARY,
-              customID: "unik/r",
-            },
-          ],
-        },
-      ],
-    });
+
+    embed.addField(
+      "Informacje:",
+      `[${pvpPoints}] Niestety, unik się nie udał...\n Otrzymałeś od życia ${dmg} w tyłek`,
+    ).setColor("#ff0000").setFooter(`${snek}|${dmg}|${armor}`);
   } else {
-    d.respond({
-      embeds: [
-        new Embed().setTitle("No siemka").addField(
-          "Informacje:",
-          `[${Math.floor(okay / 2.5)}] Twój unik się udał!`,
-        ).setColor("#00ff00").setFooter(`${snek}|${dmg}|${armor}`),
-      ],
-      components: [
-        {
-          type: MessageComponentType.ActionRow,
-          components: [
-            {
-              type: MessageComponentType.Button,
-              label: "Jeszcze raz",
-              style: ButtonStyle.PRIMARY,
-              customID: "unik/r",
-            },
-          ],
-        },
-      ],
-    });
+    embed.addField(
+      "Informacje:",
+      `[${pvpPoints}] Twój unik się udał!`,
+    ).setColor("#00ff00").setFooter(`${snek}|${dmg}|${armor}`);
   }
+
+  d.respond({
+    embeds: [embed],
+    components: replayComponent("unik"),
+  });
 });
 
 client.interactions.handle(
