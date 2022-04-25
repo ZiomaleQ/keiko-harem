@@ -1,5 +1,10 @@
 [
   {
+    "name": "info",
+    "description": "Pokaż info o wiadomości",
+    "type": "MESSAGE"
+  },
+  {
     "name": "anime",
     "description": "Info a anime",
     "options": [
@@ -781,6 +786,64 @@
             "name": "max",
             "description": "Max postaci",
             "type": "INTEGER"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "monster",
+    "description": "Zarządzanie potworami",
+    "options": [
+      {
+        "type": "SUB_COMMAND",
+        "name": "lista",
+        "description": "Lista potworów"
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "dodaj",
+        "description": "Dodaj potworka"
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "usun",
+        "description": "Usun potworka",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "potwor",
+            "description": "Nazwa potwora",
+            "autocomplete": true,
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "edytuj",
+        "description": "Edytuj potworka",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "potwor",
+            "description": "Nazwa potwora",
+            "autocomplete": true,
+            "required": true
+          }
+        ]
+      },
+      {
+        "type": "SUB_COMMAND",
+        "name": "info",
+        "description": "Info o potworze",
+        "options": [
+          {
+            "type": "STRING",
+            "name": "potwor",
+            "description": "Nazwa potwora",
+            "autocomplete": true,
+            "required": true
           }
         ]
       }

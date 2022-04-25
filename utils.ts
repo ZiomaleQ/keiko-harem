@@ -1,3 +1,5 @@
+import { ButtonComponent, ButtonStyle, MessageComponentType } from "./deps.ts";
+
 export const graphql = {
   MEDIA_QUERY: `query ($search: String, $type: MediaType) {
     Media(search: $search, type: $type) {
@@ -45,4 +47,18 @@ export function wrap(str: string, length: number): string[] {
     new RegExp(`(?![^\\n]{1,${length}}$)([^\\n]{1,${length}})\\s`, "g"),
     "$1\n",
   ).split("\n");
+}
+
+export function createButton(
+  { label, style, customID, url, disabled, emoji }: Partial<ButtonComponent>,
+): ButtonComponent {
+  return {
+    type: MessageComponentType.Button,
+    label: label ?? "",
+    style: style ?? ButtonStyle.PRIMARY,
+    customID: customID,
+    url: url,
+    disabled,
+    emoji,
+  };
 }

@@ -1,5 +1,6 @@
 import { config } from "./config.ts";
 import {
+  GuildManager,
   HeroManager,
   ItemManager,
   RavenHero,
@@ -29,12 +30,31 @@ export interface Monster {
   attachments: string;
 }
 
+export interface RavenResponse<T> {
+  TotalResults: number;
+  LongTotalResults: number;
+  ScannedResults: number;
+  SkippedResults: number;
+  DurationInMs: number;
+  // deno-lint-ignore no-explicit-any
+  IncludedPaths?: any;
+  IndexName: string;
+  Results: T[];
+  // deno-lint-ignore no-explicit-any
+  Includes: Record<any, any>;
+  IndexTimestamp: Date;
+  LastQueryTime: Date;
+  IsStale: boolean;
+  ResultEtag: number;
+  NodeTag: string;
+}
+
 // deno-lint-ignore no-explicit-any
 export async function fetchData<T extends any>(
   method: string,
   path: string,
   body: string | null = null,
-): Promise<T> {
+): Promise<RavenResponse<T>> {
   const response = await fetch(
     `http://${config.RAVEN_DB.SERVER}:${config.RAVEN_DB.PORT}/databases${path}`,
     {
@@ -61,20 +81,20 @@ export async function fetchData<T extends any>(
   // deno-lint-ignore no-explicit-any
   if (response.status === 204) return null as any;
 
-  return await response.json();
+  return (await response.json()) as RavenResponse<T>;
 }
 
 export async function resolveItem(
   gid: string,
   name: string,
 ): Promise<RavenItem | undefined> {
-  let item: RavenItem | undefined = (await ItemManager.getByName(
+  let item: RavenItem | undefined = (await ItemManager.getInstance().getByName(
     gid,
     name,
   ));
 
   if (item === undefined) {
-    item = await ItemManager.getByID(name);
+    item = await ItemManager.getInstance().getByID(name);
   }
 
   return item;
@@ -85,13 +105,13 @@ export async function resolveHero(
   name: string | undefined,
 ): Promise<RavenHero | undefined> {
   if (name === undefined) return undefined;
-  let hero: RavenHero | undefined = (await HeroManager.getByName(
+  let hero: RavenHero | undefined = (await HeroManager.getInstance().getByName(
     gid,
     name,
   ));
 
   if (hero === undefined) {
-    hero = await HeroManager.getByID(name);
+    hero = await HeroManager.getInstance().getByID(name);
   }
 
   return hero;
@@ -99,10 +119,19 @@ export async function resolveHero(
 
 export function convertItemsToEmbeds(
   item: RavenItem,
-  guildCurrency: string | null,
 ): EmbedField {
   return {
-    name: item.name + " - " + item.data.price + (guildCurrency || "$"),
+    name: item.name + " - " +
+      formatMoney(
+        item.gid,
+        typeof item.data.price === "number"
+          ? item.data.price
+          : item.data.price.find((elt) => elt.entity === "ALL")!.price,
+      ),
     value: item.data.description,
   };
+}
+
+export async function formatMoney(gid: string, value: number): Promise<string> {
+  return value + await GuildManager.getInstance().getCurrency(gid);
 }
