@@ -1,26 +1,25 @@
-import { fetchData } from "./roleplayUtils.ts";
+import { fetchData, RavenResponse } from "./roleplayUtils.ts";
 
-export class BaseManager<T> {
+export class BaseManager<T extends RavenMeta> {
   dbName = "";
 
   constructor(dbName: string) {
     this.dbName = dbName;
   }
 
-  async get(query: string): Promise<T | undefined> {
-    const resp = await fetchData<T>(
-      "GET",
+  async query(
+    query: string,
+    params: Record<string, unknown> = {},
+    method = "GET",
+  ): Promise<RavenResponse<T>> {
+    return await fetchData(
+      method,
       `/${this.dbName}/queries?query=${query}`,
+      JSON.stringify({
+        "Query": query,
+        "QueryParameters": params,
+      }),
     );
-    return resp.Results[0];
-  }
-
-  async getAll(query: string): Promise<T[]> {
-    const resp = await fetchData<T>(
-      "GET",
-      `/${this.dbName}/queries?query=${query}`,
-    );
-    return resp.Results;
   }
 
   async create(data: T): Promise<void> {
@@ -37,8 +36,7 @@ export class BaseManager<T> {
       `/${this.dbName}/bulk_docs`,
       JSON.stringify({
         Commands: [{
-          // deno-lint-ignore no-explicit-any
-          Id: (data as any)["@metadata"]["@id"],
+          Id: data["@metadata"]["@id"],
           Patch: {
             Script: `${
               Object.keys(data).map((elt) =>
@@ -86,7 +84,7 @@ export class GuildManager extends BaseManager<RavenGuild> {
 
   static default(gid: string): RavenGuild {
     return {
-      "@metadata": { "@collection": null, "@id": "" },
+      "@metadata": DEFAULT_META,
       gid: gid,
       maxHeroes: 1,
       webhooks: {},
@@ -96,8 +94,9 @@ export class GuildManager extends BaseManager<RavenGuild> {
     };
   }
 
-  async get(gid: string) {
-    return await super.get(`from "@empty" where gid == "${gid}"`);
+  async get(gid: string): Promise<RavenGuild | undefined> {
+    return (await super.query('from "@empty" where gid == "$gid"', { gid }))
+      .Results[0];
   }
 
   async getOrCreate(
@@ -133,7 +132,7 @@ export class MoneyManager extends BaseManager<RavenMoney> {
 
   static default(gid: string, uid: string): RavenMoney {
     return {
-      "@metadata": { "@collection": null, "@id": "" },
+      "@metadata": DEFAULT_META,
       gid,
       uid,
       value: 0,
@@ -142,11 +141,11 @@ export class MoneyManager extends BaseManager<RavenMoney> {
     };
   }
 
-  //@ts-ignore: TS moment
-  getAll(gid: string, uid: string): Promise<RavenMoney[]> {
-    return super.getAll(
-      `from "@empty" where gid == "${gid}" and uid == "${uid!}"`,
-    );
+  async getAll(gid: string, uid: string): Promise<RavenMoney[]> {
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and uid == "$uid"`,
+      { gid, uid },
+    )).Results;
   }
 
   async getOrCreate(
@@ -185,37 +184,40 @@ export class ItemManager extends BaseManager<RavenItem> {
   async getPage(
     gid: string,
     page = -1,
-  ): Promise<{ allItems: number; data: RavenItem[] }> {
-    const resp = await fetchData<RavenItem>(
-      "GET",
-      `/${this.dbName}/queries?query=from "@empty" where gid == "${gid}" order by data.price as long ${
-        page === -1 ? "" : "limit " + page * 5 + " ,5"
-      }`,
-    );
-
-    return {
-      allItems: resp.LongTotalResults,
-      data: resp.Results,
-    };
+  ): Promise<RavenResponse<RavenItem>> {
+    if (page === -1) {
+      return await super.query(
+        `from "@empty" where gid == "$gid" order by data.price as long`,
+        { gid },
+      );
+    } else {
+      return await super.query(
+        `from "@empty" where gid == "$gid" order by data.price as long limit, $page
+        }`,
+        { page: page * 5, gid },
+      );
+    }
   }
 
   async getByName(gid: string, name: string): Promise<RavenItem | undefined> {
-    return await this.get(
-      `from "@empty" where gid == "${gid}" and name == "${name}"`,
-    );
+    return (await this.query(
+      `from "@empty" where gid == "$gid" and name == "$name"`,
+      { gid, name },
+    )).Results[0];
   }
 
   async getAutocompletitions(gid: string, str: string): Promise<RavenItem[]> {
-    return await this.getAll(
-      `from "@empty" where gid == "${gid}" and startsWith(name, "${str}") limit 25`,
-    );
+    return (await this.query(
+      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      { gid, str },
+    )).Results;
   }
 
   async getTags(gid: string): Promise<string[]> {
-    const resp = await fetchData<{ "data.tags": string[] }>(
-      "GET",
-      `/items/queries?query=from "@empty" where data.tags.length > 0 and gid == "${gid}" select data.tags`,
-    );
+    const resp = await this.query(
+      `from "@empty" where data.tags.length > 0 and gid == "$gid" select distinct data.tags`,
+      { gid },
+    ) as unknown as RavenResponse<{ "data.tags": string }>;
 
     return [
       ...(new Set(
@@ -278,23 +280,78 @@ export class HeroManager extends BaseManager<RavenHero> {
     super("hero");
   }
 
-  //@ts-ignore: TS moment
   async getAll(gid: string, uid: string): Promise<RavenHero[]> {
-    return await super.getAll(
-      `from "@empty" where gid == "${gid}" and uid == "${uid!}"`,
-    );
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and uid == "$uid"`,
+      { gid, uid },
+    )).Results;
   }
 
   async getByName(gid: string, name: string): Promise<RavenHero | undefined> {
-    return await super.get(
-      `from "@empty" where gid == "${gid}" and name == "${name}"`,
-    );
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and name == "$name"`,
+      { gid, name },
+    )).Results[0];
   }
 
   async getAutocompletitions(gid: string, str: string): Promise<RavenHero[]> {
-    return await super.getAll(
-      `from "@empty" where gid == "${gid}" and startsWith(name, "${str}") limit 25`,
-    );
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      { gid, str },
+    )).Results;
+  }
+}
+
+export class MonsterManager extends BaseManager<RavenMonster> {
+  static #instance: MonsterManager | undefined = undefined;
+
+  static getInstance() {
+    if (!this.#instance) {
+      this.#instance = new MonsterManager();
+    }
+    return this.#instance;
+  }
+
+  constructor() {
+    super("monsters");
+  }
+
+  async getByName(
+    gid: string,
+    name: string,
+  ): Promise<RavenMonster | undefined> {
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and name == "$name"`,
+      { gid, name },
+    )).Results[0];
+  }
+
+  async getPage(
+    gid: string,
+    page = -1,
+  ): Promise<RavenResponse<RavenMonster>> {
+    if (page === -1) {
+      return await super.query(
+        `from "@empty" where gid == "$gid" order by name`,
+        { gid },
+      );
+    } else {
+      return await super.query(
+        `from "@empty" where gid == "$gid" order by name, $page
+        }`,
+        { page: page * 5, gid },
+      );
+    }
+  }
+
+  async getAutocompletitions(
+    gid: string,
+    str: string,
+  ): Promise<RavenMonster[]> {
+    return (await super.query(
+      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      { gid, str },
+    )).Results;
   }
 }
 
@@ -307,8 +364,11 @@ export interface Metadata {
 
 export const DEFAULT_META: Metadata = { "@collection": null, "@id": "" };
 
-export interface RavenGuild {
+export interface RavenMeta {
   "@metadata": Metadata;
+}
+
+export interface RavenGuild extends RavenMeta {
   gid: string;
   maxHeroes: number;
   money: { currency: string | null; startingMoney: number };
@@ -317,8 +377,7 @@ export interface RavenGuild {
   xp: { perLevel: number; starting: number };
 }
 
-export interface RavenMoney {
-  "@metadata": Metadata;
+export interface RavenMoney extends RavenMeta {
   gid: string;
   uid: string;
   value: number;
@@ -327,8 +386,7 @@ export interface RavenMoney {
   items: { hash: string; quantinity: number }[];
 }
 
-export interface RavenItem {
-  "@metadata": Metadata;
+export interface RavenItem extends RavenMeta {
   gid: string;
   name: string;
   data: {
@@ -372,8 +430,7 @@ export interface RavenItem {
   };
 }
 
-export interface RavenHero {
-  "@metadata": Metadata;
+export interface RavenHero extends RavenMeta {
   uid: string;
   gid: string;
   name: string;
@@ -381,7 +438,32 @@ export interface RavenHero {
     nickname: string;
     account: string | null;
     skills: [];
-    runes: [];
     avatarUrl: string;
+  };
+}
+
+export interface RavenMonster extends RavenMeta {
+  gid: string;
+  name: string;
+  data: {
+    description: string;
+    hp: number;
+    dmg: number;
+    xp: number;
+    money: number;
+    skills: [];
+  };
+}
+
+export interface RavenSkill extends RavenMeta {
+  gid: string;
+  description: string;
+  hero: {
+    bind: boolean;
+    id: string | null;
+  };
+  passive: boolean;
+  content: {
+    code: string;
   };
 }

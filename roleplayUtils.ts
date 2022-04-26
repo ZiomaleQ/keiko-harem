@@ -3,8 +3,12 @@ import {
   GuildManager,
   HeroManager,
   ItemManager,
+  MoneyManager,
+  MonsterManager,
   RavenHero,
   RavenItem,
+  RavenMoney,
+  RavenMonster,
 } from "./dataManager.ts";
 import { EmbedField } from "./deps.ts";
 
@@ -117,6 +121,42 @@ export async function resolveHero(
   return hero;
 }
 
+export async function resolveAccount(
+  gid: string,
+  uid: string,
+  hero: string | undefined,
+): Promise<[RavenMoney, RavenHero | undefined]> {
+  const accounts = await MoneyManager.getInstance().getOrCreate(gid, uid);
+
+  const heroObj = await resolveHero(gid, hero);
+
+  const wantedAcc = accounts.find((acc) =>
+    heroObj === undefined
+      ? acc.heroID === null
+      : acc.heroID === heroObj["@metadata"]["@id"]
+  )!;
+
+  return [wantedAcc, heroObj];
+}
+
+export async function resolveMonster(
+  gid: string,
+  name: string | undefined,
+): Promise<RavenMonster | undefined> {
+  if (name === undefined) return undefined;
+  let hero: RavenMonster | undefined =
+    (await MonsterManager.getInstance().getByName(
+      gid,
+      name,
+    ));
+
+  if (hero === undefined) {
+    hero = await MonsterManager.getInstance().getByID(name);
+  }
+
+  return hero;
+}
+
 export function convertItemsToEmbeds(
   item: RavenItem,
 ): EmbedField {
@@ -134,4 +174,23 @@ export function convertItemsToEmbeds(
 
 export async function formatMoney(gid: string, value: number): Promise<string> {
   return value + await GuildManager.getInstance().getCurrency(gid);
+}
+
+export function formatHero(
+  hero: RavenHero | undefined,
+  prefix = "",
+  suffix = "",
+) {
+  return hero === undefined ? "" : prefix + hero.name + suffix;
+}
+
+export function heroWithMember(
+  hero: RavenHero | undefined,
+  prefix = "",
+  suffix = "",
+  member: string | undefined = hero?.uid,
+) {
+  return `${member === undefined ? "" : `<@${member}>`} ${
+    formatHero(hero, prefix, suffix)
+  }`;
 }

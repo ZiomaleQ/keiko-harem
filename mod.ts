@@ -4,6 +4,7 @@ import {
   HeroManager,
   ItemManager,
   MoneyManager,
+  MonsterManager,
 } from "./dataManager.ts";
 import {
   ActionRowComponent,
@@ -27,9 +28,13 @@ import {
 } from "./deps.ts";
 import {
   convertItemsToEmbeds,
+  formatHero,
   formatMoney,
+  heroWithMember,
+  resolveAccount,
   resolveHero,
   resolveItem,
+  resolveMonster,
 } from "./roleplayUtils.ts";
 import { chunk, createButton, genRandom, graphql } from "./utils.ts";
 
@@ -487,31 +492,26 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
 
   const anotherUser = d.option<User | undefined>("osoba");
 
-  const money = await MoneyManager.getInstance().getOrCreate(
+  const [account, hero] = await resolveAccount(
     d.guild.id,
     anotherUser?.id ?? d.user.id,
+    d.option("postac"),
   );
-
-  const guildData = (await GuildManager.getInstance().getOrCreate(d.guild.id));
-
-  const hero = await resolveHero(
-    d.guild.id,
-    d.option<string | undefined>("postac"),
-  );
-
-  const currAcc = money.find((acc) =>
-    hero === undefined
-      ? acc.heroID === null
-      : acc.heroID === hero["@metadata"]["@id"]
-  )!;
 
   const embed = new Embed().setTitle("No siemka").addField(
     "Balans",
-    currAcc.value + (guildData.money.currency || "$"),
+    await formatMoney(d.guild.id, account.value),
   ).addField(
     "Konto bohatera?",
-    currAcc.heroID !== null ? "Tak" : "Nie",
+    hero !== undefined ? "Tak" : "Nie",
   );
+
+  if (hero !== undefined) {
+    embed.addField(
+      "Bohater",
+      `${hero.name} ${hero.data.nickname || `<${hero.data.nickname}>`} `,
+    );
+  }
 
   return d.respond({ embeds: [embed] });
 });
@@ -528,33 +528,20 @@ client.interactions.handle(
 
     const moneyValue = Math.abs(d.option<number>("wartosc"));
     const anotherUser = d.option<User>("osoba");
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
+
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
+    account.value += moneyValue;
 
-    const receiverAccount = receiverMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    receiverAccount.value += moneyValue;
-
-    await MoneyManager.getInstance().update(
-      receiverAccount,
-    );
+    await MoneyManager.getInstance().update(account);
 
     return await d.respond({
-      content: `Dodano ${
-        formatMoney(d.guild.id, moneyValue)
-      }, dla ${anotherUser.toString()} ${
-        hero !== undefined ? "(" + hero.name + ")" : ""
+      content: `Dodano ${formatMoney(d.guild.id, moneyValue)}, dla ${
+        heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
     });
   },
@@ -572,33 +559,22 @@ client.interactions.handle(
 
     const moneyValue = Math.abs(d.option<number>("wartosc"));
     const anotherUser = d.option<User>("osoba");
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
+
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const receiverAccount = receiverMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    receiverAccount.value -= moneyValue;
+    account.value -= moneyValue;
 
     await MoneyManager.getInstance().update(
-      receiverAccount,
+      account,
     );
 
     return await d.respond({
-      content: `Zabrano ${
-        formatMoney(d.guild.id, moneyValue)
-      }, dla ${anotherUser.toString()} ${
-        hero !== undefined ? "(" + hero.name + ")" : ""
+      content: `Zabrano ${formatMoney(d.guild.id, moneyValue)}, od ${
+        heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
     });
   },
@@ -615,36 +591,27 @@ client.interactions.handle(
     }
 
     const anotherUser = d.option<User>("osoba");
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
+
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser.id,
+      d.option("postac"),
     );
-
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const receiverAccount = receiverMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
 
     const { money } =
       (await GuildManager.getInstance().getOrCreate(d.guild.id));
 
-    receiverAccount.value = money.startingMoney;
+    account.value = money.startingMoney;
 
     await MoneyManager.getInstance().update(
-      receiverAccount,
+      account,
     );
 
     return await d.respond({
       content: `Zresetowano stan konta na: ${
-        formatMoney(d.guild.id, money.startingMoney)
+        formatMoney(d.guild.id, account.value)
       } dla ${anotherUser.toString()} ${
-        hero !== undefined ? "(" + hero.name + ")" : ""
+        heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
     });
   },
@@ -663,37 +630,17 @@ client.interactions.handle(
     const moneyValue = Math.abs(d.option<number>("wartosc"));
     const anotherUser = d.option<User>("osoba");
 
-    const heroGiver = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("dawca"),
-    );
-
-    const heroReceiver = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("biorca"),
-    );
-
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
-      d.guild.id,
-      anotherUser.id,
-    );
-
-    const giverMoney = await MoneyManager.getInstance().getOrCreate(
+    const [giverAccount, giverHero] = await resolveAccount(
       d.guild.id,
       d.user.id,
+      d.option("dawca"),
     );
 
-    const receiverAccount = receiverMoney.find((acc) =>
-      heroReceiver === undefined
-        ? acc.heroID === null
-        : acc.heroID === heroReceiver["@metadata"]["@id"]
-    )!;
-
-    const giverAccount = giverMoney.find((acc) =>
-      heroGiver === undefined
-        ? acc.heroID === null
-        : acc.heroID === heroGiver["@metadata"]["@id"]
-    )!;
+    const [receiverAccount, receiverHero] = await resolveAccount(
+      d.guild.id,
+      anotherUser.id,
+      d.option("biorca"),
+    );
 
     if (giverAccount.value < moneyValue) {
       return await d.respond({
@@ -716,10 +663,8 @@ client.interactions.handle(
 
     return await d.respond({
       content: `Dałeś ${formatMoney(d.guild.id, moneyValue)}${
-        heroGiver !== undefined ? "(" + heroGiver.name + ")" : ""
-      }, dla ${anotherUser.toString()}${
-        heroReceiver !== undefined ? "(" + heroReceiver.name + ")" : ""
-      }`,
+        formatHero(giverHero, "(`", "`)")
+      }, dla ${heroWithMember(receiverHero, "(`", "`)", anotherUser.id)}`,
     });
   },
 );
@@ -845,20 +790,20 @@ client.interactions.handle(
 
     const embed = new Embed().setTitle("No siemka!");
 
-    if (items.allItems === 0) {
+    if (items.TotalResults === 0) {
       return await d.respond({
         flags: InteractionResponseFlags.EPHEMERAL,
         content: "Nie ma żadnych przedmiotów",
       });
     }
 
-    items.data.map(convertItemsToEmbeds).forEach((field) =>
+    items.Results.map(convertItemsToEmbeds).forEach((field) =>
       embed.addField(field)
     );
 
     d.reply({
       embeds: [embed],
-      components: createPagination(items.allItems, 5, 0, "shop"),
+      components: createPagination(items.TotalResults, 5, 0, "shop"),
     });
   },
 );
@@ -882,24 +827,14 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     });
   }
 
-  const userMoney = await MoneyManager.getInstance().getOrCreate(
+  const [account, hero] = await resolveAccount(
     d.guild.id,
     d.user.id,
+    d.option("postac"),
   );
-
-  const hero = await resolveHero(
-    d.guild.id,
-    d.option<string | undefined>("postac"),
-  );
-
-  const userAcc = userMoney.find((acc) =>
-    hero === undefined
-      ? acc.heroID === null
-      : acc.heroID === hero["@metadata"]["@id"]
-  )!;
 
   const tags = [
-    ...new Set((await Promise.all(userAcc.items.map(async (elt) => ({
+    ...new Set((await Promise.all(account.items.map(async (elt) => ({
       item: await ItemManager.getInstance().getByID(elt.hash),
       count: elt.quantinity,
     })))).flatMap((elt) => elt.item?.data.tags ?? [])).values(),
@@ -954,8 +889,8 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
   const itemCost = membersItemCost || rolesItemCost || allItemCost ||
     item.data.price as number;
 
-  if (userAcc.value - (itemCost * count) < 0) {
-    const itemCount = Math.floor(userAcc.value / itemCost);
+  if (account.value - (itemCost * count) < 0) {
+    const itemCount = Math.floor(account.value / itemCost);
     if (itemCount === 0) {
       return await d.editResponse({
         content: "Nie stać cię...",
@@ -997,7 +932,7 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     });
   }
 
-  const items = userAcc.items;
+  const items = account.items;
 
   const itemIndex = items.findIndex((it) =>
     it.hash === item!["@metadata"]["@id"]
@@ -1009,11 +944,11 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
     items[itemIndex].quantinity = items[itemIndex].quantinity + count;
   }
 
-  userAcc.value -= itemCost * count;
-  userAcc.items = items;
+  account.value -= itemCost * count;
+  account.items = items;
 
   await MoneyManager.getInstance().update(
-    userAcc,
+    account,
   );
 
   await d.editResponse({
@@ -1081,23 +1016,13 @@ client.interactions.handle(
     }
     const anotherUser = d.option<User | undefined>("osoba");
 
-    const userMoney = await MoneyManager.getInstance().getOrCreate(
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser?.id ?? d.user.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = userMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const userItems = await Promise.all(userAcc.items.map(async (elt) => ({
+    const userItems = await Promise.all(account.items.map(async (elt) => ({
       item: await ItemManager.getInstance().getByID(elt.hash),
       count: elt.quantinity,
     })));
@@ -1108,6 +1033,10 @@ client.interactions.handle(
         ? userItems.map((elt) => `${elt.item!.name} ${elt.count}x`).join("\n")
         : "Brak",
     );
+
+    if (hero !== undefined) {
+      embed.addField("Należy do:", hero.name);
+    }
 
     return d.respond({ embeds: [embed] });
   },
@@ -1292,23 +1221,13 @@ client.interactions.handle(
       });
     }
 
-    const userMoney = await MoneyManager.getInstance().getOrCreate(
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       d.user.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = userMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const items = userAcc.items;
+    const items = account.items;
 
     if (!item.data.sell.canSell) {
       return await d.respond({
@@ -1387,11 +1306,11 @@ client.interactions.handle(
       ItemManager.getInstance().update(item);
     }
 
-    userAcc.value += value * actualCount;
-    userAcc.items = items;
+    account.value += value * actualCount;
+    account.items = items;
 
     await MoneyManager.getInstance().update(
-      userAcc,
+      account,
     );
 
     await d.editResponse({
@@ -1423,23 +1342,13 @@ client.interactions.handle(
       });
     }
 
-    const userMoney = await MoneyManager.getInstance().getOrCreate(
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       d.user.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = userMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const items = userAcc.items;
+    const items = account.items;
 
     if (!item.data.inventory) {
       return await d.respond({
@@ -1468,10 +1377,10 @@ client.interactions.handle(
       items[itemIndex].quantinity -= count;
     }
 
-    userAcc.items = items;
+    account.items = items;
 
     await MoneyManager.getInstance().update(
-      userAcc,
+      account,
     );
 
     await d.editResponse({
@@ -1507,23 +1416,14 @@ client.interactions.handle(
     }
 
     const anotherUser = d.option<User>("osoba");
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
+
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = receiverMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const items = userAcc.items;
+    const items = account.items;
 
     const itemIndex = items.findIndex((elt) =>
       elt.hash === item!["@metadata"]["@id"]
@@ -1535,15 +1435,15 @@ client.interactions.handle(
       items[itemIndex].quantinity = items[itemIndex].quantinity + count;
     }
 
-    userAcc.items = items;
+    account.items = items;
 
     await MoneyManager.getInstance().update(
-      userAcc,
+      account,
     );
 
     await d.respond({
-      content: `Dano: ${item.name} x${count}, dla ${anotherUser.toString()} ${
-        hero !== undefined ? "(" + hero.name + ")" : ""
+      content: `Dano: ${item.name} x${count}, dla ${
+        heroWithMember(hero, "(", ")", anotherUser.id)
       }`,
     });
   },
@@ -1731,23 +1631,13 @@ client.interactions.handle(
 
     const recipes = item.data.recipes;
 
-    const userMoney = await MoneyManager.getInstance().getOrCreate(
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       d.user.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = userMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const userItems = userAcc.items;
+    const userItems = account.items;
 
     function hasQuantity(hash: string, count: number): boolean {
       return ((userItems.find((elt) => elt.hash === hash)?.quantinity) ?? -1) >=
@@ -1755,7 +1645,7 @@ client.interactions.handle(
     }
 
     const recipeUsed = recipes.find((recipe) => {
-      if (recipe.additionalCost > userAcc.value) return false;
+      if (recipe.additionalCost > account.value) return false;
       if (!hasQuantity(recipe.item, recipe.countItem)) return false;
       if (
         recipe.item1 !== null && !hasQuantity(recipe.item1, recipe.countItem1!)
@@ -1799,10 +1689,10 @@ client.interactions.handle(
       quantinity: recipeUsed.result,
     });
 
-    userAcc.items = userItems;
+    account.items = userItems;
 
     await MoneyManager.getInstance().update(
-      userAcc,
+      account,
     );
 
     d.respond({
@@ -1838,23 +1728,14 @@ client.interactions.handle(
     }
 
     const anotherUser = d.option<User>("osoba");
-    const receiverMoney = await MoneyManager.getInstance().getOrCreate(
+
+    const [account, hero] = await resolveAccount(
       d.guild.id,
       anotherUser.id,
+      d.option("postac"),
     );
 
-    const hero = await resolveHero(
-      d.guild.id,
-      d.option<string | undefined>("postac"),
-    );
-
-    const userAcc = receiverMoney.find((acc) =>
-      hero === undefined
-        ? acc.heroID === null
-        : acc.heroID === hero["@metadata"]["@id"]
-    )!;
-
-    const items = userAcc.items;
+    const items = account.items;
 
     const itemIndex = items.findIndex((elt) =>
       elt.hash === item!["@metadata"]["@id"]
@@ -1875,17 +1756,16 @@ client.interactions.handle(
       items[itemIndex].quantinity -= count;
     }
 
-    userAcc.items = items;
+    account.items = items;
 
     await MoneyManager.getInstance().update(
-      userAcc,
+      account,
     );
 
     await d.respond({
-      content:
-        `Zabrano: ${item.name} x${actualCount}, od ${anotherUser.toString()} ${
-          hero !== undefined ? "(" + hero.name + ")" : ""
-        }`,
+      content: `Zabrano: ${item.name} x${actualCount}, od ${
+        heroWithMember(hero, "(", ")", d.user.id)
+      }`,
     });
   },
 );
@@ -1960,7 +1840,6 @@ client.interactions.handle(
         nickname: d.option<string | undefined>("nick") || "",
         account: null,
         skills: [],
-        runes: [],
         avatarUrl: "",
       },
     });
@@ -2025,6 +1904,7 @@ client.interactions.handle(
         content: "To nie twój bohater...",
       });
     }
+    await d.respond({ content: "Trybiki jeszcze się kręcą..." });
 
     // deno-lint-ignore no-explicit-any
     const attachments = (d.data.resolved as any).attachments;
@@ -2039,7 +1919,7 @@ client.interactions.handle(
 
     await HeroManager.getInstance().update(hero);
 
-    await d.respond({ content: "Ustawiono!" });
+    await d.editResponse({ content: "Ustawiono!" });
   },
 );
 
@@ -2137,6 +2017,192 @@ client.interactions.handle(
     await GuildManager.getInstance().update(guildData);
 
     d.respond({ content: "Zaktualizowano ustawienia" });
+  },
+);
+
+client.interactions.handle(
+  "monster dodaj",
+  async (d: SlashCommandInteraction) => {
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie masz uprawnienień",
+      });
+    }
+
+    d.showModal({
+      title: "Stwórz potwora",
+      customID: "monster/create",
+      components: [{
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Nazwa",
+          customID: "name",
+          style: "SHORT",
+          minLength: 3,
+          maxLength: 100,
+        }],
+      }, {
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Opis",
+          customID: "description",
+          style: "PARAGRAPH",
+        }],
+      }],
+    });
+  },
+);
+
+client.interactions.handle(
+  "monster usun",
+  async (d: SlashCommandInteraction) => {
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie masz uprawnienień",
+      });
+    }
+
+    const monster = await resolveMonster(
+      d.guild.id,
+      d.option<string>("potwor"),
+    );
+
+    if (monster === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki potwór nie istnieje...",
+      });
+    }
+
+    await MonsterManager.getInstance().deleteByID(monster["@metadata"]["@id"]);
+
+    return d.respond({
+      content: "Pomyślnie usunięto potwora o nazwie: " + monster.name,
+    });
+  },
+);
+
+client.interactions.handle(
+  "monster lista",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+    const monsters = await MonsterManager.getInstance().getPage(d.guild.id);
+
+    const components: ButtonComponent[] = [];
+
+    const embed = new Embed().setTitle("No hej").addField(
+      "Info",
+      "Kliknij odpowiedni przycisk żeby pokazać informacje",
+    );
+
+    monsters.Results.forEach((monster) => {
+      components.push(createButton({
+        label: monster.name.length > 77
+          ? monster.name.substring(0, 77) + "..."
+          : monster.name,
+        customID: "mo/info/" + monster["@metadata"]["@id"],
+      }));
+    });
+
+    return await d.respond({
+      embeds: [embed],
+      components: [
+        { type: MessageComponentType.ACTION_ROW, components },
+        ...createPagination(monsters.TotalResults, 5, 0, "monster"),
+      ],
+    });
+  },
+);
+
+client.interactions.handle(
+  "monster edytuj",
+  async (d: SlashCommandInteraction) => {
+    if (d.member === undefined) return;
+    if (d.guild === undefined) return;
+
+    if (!(await hasPerms(d.member))) {
+      return d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie masz uprawnienień",
+      });
+    }
+
+    const monster = await resolveMonster(
+      d.guild.id,
+      d.option<string>("potwor"),
+    );
+
+    if (monster === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki potwór nie istnieje...",
+      });
+    }
+
+    d.showModal({
+      title: "Edytuj przedmiot",
+      customID: "monster/edit/" + monster["@metadata"]["@id"],
+      components: [{
+        type: "ACTION_ROW",
+        components: [{
+          type: "TEXT_INPUT",
+          label: "Opis (zostaw puste jeśli nie chcesz zmieniać)",
+          customID: "description",
+          style: "PARAGRAPH",
+        }],
+      }],
+    });
+  },
+);
+
+client.interactions.handle(
+  "monster info",
+  async (d: SlashCommandInteraction) => {
+    if (d.guild === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Nie jesteś w serwerze...",
+      });
+    }
+
+    const monster = await resolveMonster(
+      d.guild.id,
+      d.option<string>("potwor"),
+    );
+
+    if (monster === undefined) {
+      return await d.respond({
+        flags: InteractionResponseFlags.EPHEMERAL,
+        content: "Taki przedmiot nie istnieje...",
+      });
+    }
+
+    return d.respond({
+      embeds: [
+        new Embed()
+          .setTitle("No siemka")
+          .addField("Nazwa", monster.name)
+          .addField(
+            "Opis",
+            monster.data.description || "Brak",
+          ),
+      ],
+    });
   },
 );
 
@@ -2319,7 +2385,7 @@ client.on("interactionCreate", async (i) => {
 
     const embed = new Embed().setTitle("No siemka!");
 
-    items.data.map(convertItemsToEmbeds).forEach((field) => {
+    items.Results.map(convertItemsToEmbeds).forEach((field) => {
       embed.addField(field);
     });
 
@@ -2327,7 +2393,7 @@ client.on("interactionCreate", async (i) => {
 
     i.message.edit({
       embeds: [embed],
-      components: createPagination(items.allItems, 5, page, "shop"),
+      components: createPagination(items.TotalResults, 5, page, "shop"),
     });
   }
 });
@@ -2423,6 +2489,8 @@ function autocomplete(d: AutocompleteInteraction) {
     case "dawca":
     case "biorca":
       return autocompleteHero(d);
+    case "potwor":
+      return autocompleteMonster(d);
   }
 }
 
@@ -2453,6 +2521,17 @@ async function autocompleteHero(d: AutocompleteInteraction): Promise<void> {
     d.focusedOption.value,
   ));
   await d.autocomplete(heroes.map((elt) => ({
+    name: elt.name,
+    value: elt["@metadata"]["@id"],
+  })));
+}
+
+async function autocompleteMonster(d: AutocompleteInteraction): Promise<void> {
+  const monsters = (await MonsterManager.getInstance().getAutocompletitions(
+    d.guild!.id,
+    d.focusedOption.value,
+  ));
+  await d.autocomplete(monsters.map((elt) => ({
     name: elt.name,
     value: elt["@metadata"]["@id"],
   })));
