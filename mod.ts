@@ -495,7 +495,7 @@ client.interactions.handle("money stan", async (d: SlashCommandInteraction) => {
   const [account, hero] = await resolveAccount(
     d.guild.id,
     anotherUser?.id ?? d.user.id,
-    d.option("postac"),
+    d.option<string | undefined>("postac"),
   );
 
   const embed = new Embed().setTitle("No siemka").addField(
@@ -1904,7 +1904,7 @@ client.interactions.handle(
         content: "To nie twój bohater...",
       });
     }
-    await d.respond({ content: "Trybiki jeszcze się kręcą..." });
+    await d.editResponse({ content: "Trybiki jeszcze się kręcą..." });
 
     // deno-lint-ignore no-explicit-any
     const attachments = (d.data.resolved as any).attachments;
@@ -1919,7 +1919,9 @@ client.interactions.handle(
 
     await HeroManager.getInstance().update(hero);
 
-    await d.editResponse({ content: "Ustawiono!" });
+    await d.editResponse({
+      content: "Ustawiono! Nie usuwaj wiadomości poniżej bo avatar zniknie...",
+    });
   },
 );
 
@@ -2520,6 +2522,7 @@ async function autocompleteHero(d: AutocompleteInteraction): Promise<void> {
     d.guild!.id,
     d.focusedOption.value,
   ));
+
   await d.autocomplete(heroes.map((elt) => ({
     name: elt.name,
     value: elt["@metadata"]["@id"],

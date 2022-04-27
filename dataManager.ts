@@ -10,11 +10,11 @@ export class BaseManager<T extends RavenMeta> {
   async query(
     query: string,
     params: Record<string, unknown> = {},
-    method = "GET",
+    method = "POST",
   ): Promise<RavenResponse<T>> {
     return await fetchData(
       method,
-      `/${this.dbName}/queries?query=${query}`,
+      `/${this.dbName}/queries`,
       JSON.stringify({
         "Query": query,
         "QueryParameters": params,
@@ -95,8 +95,9 @@ export class GuildManager extends BaseManager<RavenGuild> {
   }
 
   async get(gid: string): Promise<RavenGuild | undefined> {
-    return (await super.query('from "@empty" where gid == "$gid"', { gid }))
-      .Results[0];
+    const req =
+      (await super.query('from "@empty" where gid == $gid', { gid }));
+    return req.Results[0];
   }
 
   async getOrCreate(
@@ -143,7 +144,7 @@ export class MoneyManager extends BaseManager<RavenMoney> {
 
   async getAll(gid: string, uid: string): Promise<RavenMoney[]> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and uid == "$uid"`,
+      `from "@empty" where gid == $gid and uid == $uid`,
       { gid, uid },
     )).Results;
   }
@@ -187,12 +188,12 @@ export class ItemManager extends BaseManager<RavenItem> {
   ): Promise<RavenResponse<RavenItem>> {
     if (page === -1) {
       return await super.query(
-        `from "@empty" where gid == "$gid" order by data.price as long`,
+        `from "@empty" where gid == $gid order by data.price as long`,
         { gid },
       );
     } else {
       return await super.query(
-        `from "@empty" where gid == "$gid" order by data.price as long limit, $page
+        `from "@empty" where gid == $gid order by data.price as long limit, $page
         }`,
         { page: page * 5, gid },
       );
@@ -201,21 +202,21 @@ export class ItemManager extends BaseManager<RavenItem> {
 
   async getByName(gid: string, name: string): Promise<RavenItem | undefined> {
     return (await this.query(
-      `from "@empty" where gid == "$gid" and name == "$name"`,
+      `from "@empty" where gid == $gid and name == $name`,
       { gid, name },
     )).Results[0];
   }
 
   async getAutocompletitions(gid: string, str: string): Promise<RavenItem[]> {
     return (await this.query(
-      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      `from "@empty" where gid == $gid and startsWith(name, $str) limit 25`,
       { gid, str },
     )).Results;
   }
 
   async getTags(gid: string): Promise<string[]> {
     const resp = await this.query(
-      `from "@empty" where data.tags.length > 0 and gid == "$gid" select distinct data.tags`,
+      `from "@empty" where data.tags.length > 0 and gid == $gid select distinct data.tags`,
       { gid },
     ) as unknown as RavenResponse<{ "data.tags": string }>;
 
@@ -282,21 +283,21 @@ export class HeroManager extends BaseManager<RavenHero> {
 
   async getAll(gid: string, uid: string): Promise<RavenHero[]> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and uid == "$uid"`,
+      `from "@empty" where gid == $gid and uid == $uid`,
       { gid, uid },
     )).Results;
   }
 
   async getByName(gid: string, name: string): Promise<RavenHero | undefined> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and name == "$name"`,
+      `from "@empty" where gid == $gid and name == $name`,
       { gid, name },
     )).Results[0];
   }
 
   async getAutocompletitions(gid: string, str: string): Promise<RavenHero[]> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      `from "@empty" where gid == $gid and startsWith(name, $str) limit 25`,
       { gid, str },
     )).Results;
   }
@@ -321,7 +322,7 @@ export class MonsterManager extends BaseManager<RavenMonster> {
     name: string,
   ): Promise<RavenMonster | undefined> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and name == "$name"`,
+      `from "@empty" where gid == $gid and name == $name`,
       { gid, name },
     )).Results[0];
   }
@@ -332,12 +333,12 @@ export class MonsterManager extends BaseManager<RavenMonster> {
   ): Promise<RavenResponse<RavenMonster>> {
     if (page === -1) {
       return await super.query(
-        `from "@empty" where gid == "$gid" order by name`,
+        `from "@empty" where gid == $gid order by name`,
         { gid },
       );
     } else {
       return await super.query(
-        `from "@empty" where gid == "$gid" order by name, $page
+        `from "@empty" where gid == $gid order by name, $page
         }`,
         { page: page * 5, gid },
       );
@@ -349,7 +350,7 @@ export class MonsterManager extends BaseManager<RavenMonster> {
     str: string,
   ): Promise<RavenMonster[]> {
     return (await super.query(
-      `from "@empty" where gid == "$gid" and startsWith(name, "$str") limit 25`,
+      `from "@empty" where gid == $gid and startsWith(name, $str) limit 25`,
       { gid, str },
     )).Results;
   }

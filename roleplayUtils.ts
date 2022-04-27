@@ -127,7 +127,7 @@ export async function resolveAccount(
   hero: string | undefined,
 ): Promise<[RavenMoney, RavenHero | undefined]> {
   const accounts = await MoneyManager.getInstance().getOrCreate(gid, uid);
-
+    
   const heroObj = await resolveHero(gid, hero);
 
   const wantedAcc = accounts.find((acc) =>
