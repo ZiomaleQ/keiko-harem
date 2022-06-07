@@ -136,9 +136,9 @@ function generateAttaackEmbed(okay: number, crit: boolean, dmg: number): Embed {
   let message = `[${okay}]`;
 
   if (okay >= 15) {
-    message += " Trafiłeś" + crit
-      ? " krytycznie"
-      : "" + `, zadałeś ${dmg} obrażeń.`;
+    message += " Trafiłeś" + (crit
+          ? " krytycznie"
+          : "") + `, zadałeś ${dmg} obrażeń.`;
   } else {
     message += " Niestety, atak się nie udał...";
   }
