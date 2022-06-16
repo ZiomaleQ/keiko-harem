@@ -540,7 +540,7 @@ client.interactions.handle(
     await MoneyManager.getInstance().update(account);
 
     return await d.respond({
-      content: `Dodano ${formatMoney(d.guild.id, moneyValue)}, dla ${
+      content: `Dodano ${await formatMoney(d.guild.id, moneyValue)}, dla ${
         heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
     });
@@ -573,7 +573,7 @@ client.interactions.handle(
     );
 
     return await d.respond({
-      content: `Zabrano ${formatMoney(d.guild.id, moneyValue)}, od ${
+      content: `Zabrano ${await formatMoney(d.guild.id, moneyValue)}, od ${
         heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
     });
@@ -609,7 +609,7 @@ client.interactions.handle(
 
     return await d.respond({
       content: `Zresetowano stan konta na: ${
-        formatMoney(d.guild.id, account.value)
+        await formatMoney(d.guild.id, account.value)
       } dla ${anotherUser.toString()} ${
         heroWithMember(hero, "(`", ")`", anotherUser.id)
       }`,
@@ -662,7 +662,7 @@ client.interactions.handle(
     );
 
     return await d.respond({
-      content: `Dałeś ${formatMoney(d.guild.id, moneyValue)}${
+      content: `Dałeś ${await formatMoney(d.guild.id, moneyValue)}${
         formatHero(giverHero, "(`", "`)")
       }, dla ${heroWithMember(receiverHero, "(`", "`)", anotherUser.id)}`,
     });
@@ -953,7 +953,7 @@ client.interactions.handle("sklep kup", async (d: SlashCommandInteraction) => {
 
   await d.editResponse({
     content: `Kupiono: ${item.name} x${count} za ${
-      formatMoney(d.guild.id, count * itemCost)
+      await formatMoney(d.guild.id, count * itemCost)
     } ${hero !== undefined ? ", dla postaci: " + hero.name : ""}`,
   });
 });
@@ -1092,7 +1092,7 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
             ? "Powietrze"
             : (component2?.name ?? "Usunięty przedmiot")
         }${component2 === null ? "" : "x" + elt.countItem1} + ${
-          formatMoney(d.guild!.id, elt.additionalCost)
+          await formatMoney(d.guild!.id, elt.additionalCost)
         }\``
       );
     }))).join("\n");
@@ -1315,7 +1315,7 @@ client.interactions.handle(
 
     await d.editResponse({
       content: `Sprzedano: ${item.name} x${actualCount} za ${
-        formatMoney(d.guild.id, value * actualCount)
+        await formatMoney(d.guild.id, value * actualCount)
       } ${hero !== undefined ? ", z konta postaci: " + hero.name : ""}`,
     });
   },
@@ -1598,7 +1598,7 @@ client.interactions.handle(
           component2 === undefined
             ? ""
             : `+ ${component2.name}x${component2ItemsCount}`
-        } + ${formatMoney(d.guild.id, cost)}\``,
+        } + ${await formatMoney(d.guild.id, cost)}\``,
     });
   },
 );
