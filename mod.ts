@@ -1084,18 +1084,18 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
         ? null
         : await ItemManager.getInstance().getByID(elt.item1);
 
-      return item!.data.recipes.map((elt) =>
-        `\`${item!.name}x${elt.result} = ${
-          component1?.name ?? "Usunięty przedmiot"
-        }x${elt.countItem} + ${
-          component2 === null
-            ? "Powietrze"
-            : (component2?.name ?? "Usunięty przedmiot")
-        }${component2 === null ? "" : "x" + elt.countItem1} + ${
-          await formatMoney(d.guild!.id, elt.additionalCost)
-        }\``
-      );
-    }))).join("\n");
+      return await Promise.all(item!.data.recipes.map(async (elt) =>
+              `\`${item!.name}x${elt.result} = ${
+                component1?.name ?? "Usunięty przedmiot"
+              }x${elt.countItem} + ${
+                component2 === null
+                  ? "Powietrze"
+                  : (component2?.name ?? "Usunięty przedmiot")
+              }${component2 === null ? "" : "x" + elt.countItem1} + ${
+                await formatMoney(d.guild!.id, elt.additionalCost)
+              }\``
+            );
+          })))).join("\n");
   }
 
   return d.respond({
