@@ -1084,7 +1084,7 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
         ? null
         : await ItemManager.getInstance().getByID(elt.item1);
 
-      return await Promise.all(item!.data.recipes.map(await (elt) =>
+      return await Promise.all(item!.data.recipes.map(async (elt) =>
               `\`${item!.name}x${elt.result} = ${
                 component1?.name ?? "Usunięty przedmiot"
               }x${elt.countItem} + ${
