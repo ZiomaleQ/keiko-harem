@@ -1084,7 +1084,7 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
         ? null
         : await ItemManager.getInstance().getByID(elt.item1);
 
-      return await Promise.all(item!.data.recipes.map(async (elt) =>
+      return await Promise.all(item!.data.recipes.map(await (elt) =>
               `\`${item!.name}x${elt.result} = ${
                 component1?.name ?? "Usunięty przedmiot"
               }x${elt.countItem} + ${
@@ -1094,8 +1094,8 @@ client.interactions.handle("sklep info", async (d: SlashCommandInteraction) => {
               }${component2 === null ? "" : "x" + elt.countItem1} + ${
                 await formatMoney(d.guild!.id, elt.additionalCost)
               }\``
-            );
-          })))).join("\n");
+            ));
+    }))).join("\n");
   }
 
   return d.respond({
