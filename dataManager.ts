@@ -188,14 +188,13 @@ export class ItemManager extends BaseManager<RavenItem> {
   ): Promise<RavenResponse<RavenItem>> {
     if (page === -1) {
       return await super.query(
-        `from "@empty" where gid == $gid order by data.price as long`,
+        `from "@empty" where gid == $gid order by data.price as long limit 5`,
         { gid },
       );
     } else {
       return await super.query(
-        `from "@empty" where gid == $gid order by data.price as long limit, $page
-        }`,
-        { page: page * 5, gid },
+        `from "@empty" where gid == $gid order by data.price as long limit $start, $end`,
+        { start: page * 5, end: page + 1 * 5, gid },
       );
     }
   }

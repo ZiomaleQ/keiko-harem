@@ -797,7 +797,7 @@ client.interactions.handle(
       });
     }
 
-    items.Results.map(convertItemsToEmbeds).forEach((field) =>
+    (await Promise.all(items.Results.map(convertItemsToEmbeds))).forEach((field) =>
       embed.addField(field)
     );
 
@@ -2387,7 +2387,7 @@ client.on("interactionCreate", async (i) => {
 
     const embed = new Embed().setTitle("No siemka!");
 
-    items.Results.map(convertItemsToEmbeds).forEach((field) => {
+    (await Promise.all(items.Results.map(convertItemsToEmbeds))).forEach((field) => {
       embed.addField(field);
     });
 
@@ -2399,9 +2399,6 @@ client.on("interactionCreate", async (i) => {
     });
   }
 });
-
-client.on("debug", console.log);
-await client.connect(undefined, Intents.NonPrivileged);
 
 async function hasPerms(member: Member): Promise<boolean> {
   const roles = await member.roles.array();
@@ -2427,20 +2424,27 @@ function createPagination(
   allItems: number,
   perPage: number,
   currentPage: number,
-  cid: string,
+  cid: string
 ): MessageComponentData[] {
+  
+  const previousPage = currentPage - 1
+  const disablePreviousPage = previousPage < 0
+
+  const nextPage = currentPage + 1
+  const disableNextPage = allItems - (nextPage * perPage) <= 0
+
   return [{
     type: "ACTION_ROW",
     components: [
       createButton({
         label: "Poprzednia strona",
-        customID: `${cid}/${currentPage - 1}`,
-        disabled: (currentPage - 1) < 0,
+        customID: `${cid}/${previousPage}`,
+        disabled: disablePreviousPage,
       }),
       createButton({
         label: "Kolejna strona",
         customID: `${cid}/${currentPage + 1}`,
-        disabled: allItems - (allItems + perPage * 5) >= 0,
+        disabled: disableNextPage,
       }),
     ],
   }];
@@ -2539,3 +2543,7 @@ async function autocompleteMonster(d: AutocompleteInteraction): Promise<void> {
     value: elt["@metadata"]["@id"],
   })));
 }
+
+client.interactions.on("interactionError", console.log)
+client.on("debug", console.log);
+await client.connect(undefined, Intents.NonPrivileged);

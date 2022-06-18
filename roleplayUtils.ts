@@ -157,12 +157,12 @@ export async function resolveMonster(
   return hero;
 }
 
-export function convertItemsToEmbeds(
+export async function convertItemsToEmbeds(
   item: RavenItem,
-): EmbedField {
+): Promise<EmbedField> {
   return {
     name: item.name + " - " +
-      formatMoney(
+      await formatMoney(
         item.gid,
         typeof item.data.price === "number"
           ? item.data.price
