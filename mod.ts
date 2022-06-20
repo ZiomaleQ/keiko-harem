@@ -2239,11 +2239,11 @@ client.on("interactionCreate", async (i) => {
       const item = (await ItemManager.getInstance().getByID(itemID))!;
 
       const description = i.getComponent("description")?.value;
-      if (!description) {
+      if (description !== undefined) {
         item.data.description = description!;
       }
       const price = i.getComponent("price")?.value;
-      if (!price) {
+      if (price !== undefined) {
         item.data.price = parseFloat(price!);
       }
 
