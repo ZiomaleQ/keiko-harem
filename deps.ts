@@ -1,1 +1,1 @@
-export * from "https://deno.land/x/harmony@v2.8.0/mod.ts"
+export * from "https://raw.githubusercontent.com/harmonyland/harmony/ab841fb45a66552d844ceed914092b64d79adf51/mod.ts"
