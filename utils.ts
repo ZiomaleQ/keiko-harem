@@ -1,4 +1,4 @@
-import { ButtonComponent, ButtonStyle, MessageComponentType } from "./deps.ts";
+import { ButtonComponent, ButtonStyle, MessageComponentType } from "./deps.ts"
 
 export const graphql = {
   MEDIA_QUERY: `query ($search: String, $type: MediaType) {
@@ -29,24 +29,17 @@ export const graphql = {
       nextAiringEpisode { episode timeUntilAiring }
     }
   }`,
-};
+}
 
 export function genRandom(min: number, max: number): number {
-  return Math.floor(Math.random() * (+max - +min)) + +min;
+  return Math.floor(Math.random() * (+max - +min)) + +min
 }
 
 export function chunk<T>(arr: T[], n: number): T[][] {
   if (!arr.length) {
-    return [];
+    return []
   }
-  return [arr.slice(0, n)].concat(chunk(arr.slice(n), n));
-}
-
-export function wrap(str: string, length: number): string[] {
-  return str.replace(
-    new RegExp(`(?![^\\n]{1,${length}}$)([^\\n]{1,${length}})\\s`, "g"),
-    "$1\n",
-  ).split("\n");
+  return [arr.slice(0, n)].concat(chunk(arr.slice(n), n))
 }
 
 export function createButton(
@@ -60,5 +53,5 @@ export function createButton(
     url: url,
     disabled,
     emoji,
-  };
+  }
 }
