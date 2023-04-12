@@ -48,11 +48,19 @@ client.on("messageCreate", (msg) => {
 
   for (const relay of config.RELAY) {
     if (msg.guild?.id === relay.GUILD_ID && msg.channel.id === relay.CHANNEL_ID) {
+
+      const messageBody = {
+        content: msg.content + (msg.attachments.length > 0 ? msg.content.length > 0 ? "\n" : ""  + "{ATTACHMENTS: (" + msg.attachments.map((elt, i) => `[item: ${i}](${elt.url})`).join(", ") + ")}" : ""),
+        avatar_url: msg.author.avatarURL(),
+        username: msg.member?.displayName ?? msg.author.username,
+        embeds: msg.embeds,
+      }
+
       fetch(config.GUILDED_RELAY_URL, {
-        method: "POST", body: JSON.stringify({ content: msg.content, avatar_url: msg.author.avatarURL(), username: msg.member?.displayName ?? msg.author.username }), headers: {
+        method: "POST", body: JSON.stringify(messageBody), headers: {
           "Content-Type": "application/json",
         }
-      }).catch(err => console.error(err))
+      })
     }
   }
 
