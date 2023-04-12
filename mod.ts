@@ -6,7 +6,7 @@ import {
   InteractionChannel, InteractionResponseFlags,
   Member, MessageComponentData,
   MessageComponentType, PermissionFlags,
-  Role, SlashCommandInteraction,
+  Role, SlashCommandInteraction
 } from "./deps.ts"
 import { chunk, createButton, genRandom, graphql } from "./utils.ts"
 
@@ -37,6 +37,25 @@ client.on("ready", async () => {
 
 
   console.log("Hi, I'm " + client.user?.tag)
+})
+
+client.on("messageCreate", (msg) => {
+  // msg.author
+  // msg.content
+  // msg.channel
+  // msg.guild
+  // msg.member
+
+  for (const relay of config.RELAY) {
+    if (msg.guild?.id === relay.GUILD_ID && msg.channel.id === relay.CHANNEL_ID) {
+      fetch(config.GUILDED_RELAY_URL, {
+        method: "POST", body: JSON.stringify({ content: msg.content, avatar_url: msg.author.avatarURL(), username: msg.member?.displayName ?? msg.author.username }), headers: {
+          "Content-Type": "application/json",
+        }
+      }).catch(err => console.error(err))
+    }
+  }
+
 })
 
 client.interactions.handle("anime", async (d: SlashCommandInteraction) => {
