@@ -6,11 +6,17 @@ import {
   InteractionChannel, InteractionResponseFlags,
   Member, MessageComponentData,
   MessageComponentType, PermissionFlags,
-  Role, SlashCommandInteraction
+  Role, SlashCommandInteraction, MessageStickerFormatTypes
 } from "./deps.ts"
 import { chunk, createButton, genRandom, graphql } from "./utils.ts"
 
 const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" })
+
+const imageTypes = {
+  [MessageStickerFormatTypes.PNG]: "png",
+  [MessageStickerFormatTypes.APNG]: "gif",
+  [MessageStickerFormatTypes.LOTTIE]: "lottie",
+}
 
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all()
@@ -50,7 +56,7 @@ client.on("messageCreate", (msg) => {
     if (msg.guild?.id === relay.GUILD_ID && msg.channel.id === relay.CHANNEL_ID) {
 
       const messageBody = {
-        content: msg.content + (msg.attachments.length > 0 ? msg.content.length > 0 ? "\n" : ""  + "{ATTACHMENTS: (" + msg.attachments.map((elt, i) => `[item: ${i}](${elt.url})`).join(", ") + ")}" : ""),
+        content: msg.content + (msg.attachments.length + (msg.stickerItems?.length ?? 0) > 0 ? msg.content.length > 0 ? "\n" : "" + "{ATTACHMENTS: (" + [...msg.attachments, ...(msg.stickerItems?.map(elt => ({ url: 'https://cdn.discordapp.com/stickers/' + elt.id + '.' + imageTypes[elt.formatType] })) ?? [])].map((elt, i) => `[item: ${i}](${elt.url})`).join(", ") + ")}" : ""),
         avatar_url: msg.author.avatarURL(),
         username: msg.member?.displayName ?? msg.author.username,
         embeds: msg.embeds,
