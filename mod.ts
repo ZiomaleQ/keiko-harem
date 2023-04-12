@@ -14,7 +14,7 @@ const client = new CommandClient({ token: config.TOKEN, prefix: "keiko!" })
 
 const imageTypes = {
   [MessageStickerFormatTypes.PNG]: "png",
-  [MessageStickerFormatTypes.APNG]: "gif",
+  [MessageStickerFormatTypes.APNG]: "webp",
   [MessageStickerFormatTypes.LOTTIE]: "lottie",
 }
 
