@@ -20,7 +20,7 @@ async function readDirectory(dir: string, file: Deno.DirEntry) {
   let localTypedef: ApplicationCommandPartial | undefined = undefined
 
   if (modFile !== -1) {
-    const { Typedef, Execute } = await import(`./commands/${file.name}/mod.ts`) as { Typedef: ApplicationCommandPartial, Execute: (cmd: SlashCommandInteraction) => void }
+    const { Typedef, Execute } = await import(`${config.PATH}/commands/${file.name}/mod.ts`) as { Typedef: ApplicationCommandPartial, Execute: (cmd: SlashCommandInteraction) => void }
     localTypedef = Typedef
 
     if (Execute !== undefined) {
@@ -34,7 +34,7 @@ async function readDirectory(dir: string, file: Deno.DirEntry) {
 
   for (const subcommand of contents) {
     if (!subcommand.isFile && subcommand.name.endsWith('.ts') || subcommand.name.endsWith('.js')) continue
-    const { Typedef, Execute } = await import(`./commands/${file.name}/${subcommand.name}`) as { Typedef: SlashCommandOption, Execute: (cmd: SlashCommandInteraction) => void }
+    const { Typedef, Execute } = await import(`${config.PATH}/commands/${file.name}/${subcommand.name}`) as { Typedef: SlashCommandOption, Execute: (cmd: SlashCommandInteraction) => void }
 
     if (localTypedef.options === undefined) {
       localTypedef.options = []
@@ -53,11 +53,11 @@ client.on("ready", async () => {
   const localCommands: Command[] = []
   const typeDefs: ApplicationCommandPartial[] = []
 
-  for (const file of [...Deno.readDirSync("./commands")]) {
+  for (const file of [...Deno.readDirSync(`${config.PATH}/commands`)]) {
     if (file.isSymlink) continue
 
     if (file.isFile && file.name.endsWith('.ts') || file.name.endsWith('.js')) {
-      const { Typedef, Execute } = await import(`./commands/${file.name}`) as { Typedef: ApplicationCommandPartial, Execute: (cmd: SlashCommandInteraction) => void }
+      const { Typedef, Execute } = await import(`${config.PATH}/commands/${file.name}`) as { Typedef: ApplicationCommandPartial, Execute: (cmd: SlashCommandInteraction) => void }
       typeDefs.push(Typedef)
       localCommands.push({ name: Typedef.name, execute: Execute })
       continue
