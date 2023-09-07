@@ -13,7 +13,7 @@ type Command = {
 }
 
 async function readDirectory(dir: string, file: Deno.DirEntry) {
-  const contents = [...Deno.readDirSync(`${dir}/${file.name}`)]
+  const contents = [...Deno.readDirSync(`${config.PATH}/${dir}/${file.name}`)]
   const localCommands: Command[] = []
 
   const modFile = contents.findIndex(elt => elt.name === 'mod.ts')
