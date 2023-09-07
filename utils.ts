@@ -1,4 +1,4 @@
-import { ButtonComponent, ButtonStyle, MessageComponentType } from "./deps.ts"
+import { ButtonComponent, ButtonStyle, Member, MessageComponentType, PermissionFlags } from "./deps.ts"
 
 export const graphql = {
   MEDIA_QUERY: `query ($search: String, $type: MediaType) {
@@ -54,4 +54,16 @@ export function createButton(
     disabled,
     emoji,
   }
+}
+
+export function hasPerms(member: Member): boolean {
+  if (member.guild.ownerID === member.id) {
+    return true
+  }
+
+  if (member.permissions.has(PermissionFlags.ADMINISTRATOR)) {
+    return true
+  }
+
+  return false
 }
