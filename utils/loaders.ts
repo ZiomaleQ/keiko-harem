@@ -72,7 +72,8 @@ async function readDirectory(dir: string, file: Deno.DirEntry) {
 function getPath() {
   const url = decodeURI(new URL(import.meta.url).pathname).split('/')
 
-  url.shift()
+  if (Deno.build.os === 'windows') { url.shift() }
+  
   url.pop()
   url.pop()
 
