@@ -23,7 +23,7 @@ export const Execute = async (interaction: SlashCommandInteraction) => {
   switch (memeName) {
     case "futureme":
       await interaction.editResponse({
-        files: [await MessageAttachment.load("https://i.imgflip.com/2/6jmgmz.jpg")]
+        files: [await MessageAttachment.load("https://i.imgflip.com/6jmgmz.png?a471367")]
       })
       break
   }
