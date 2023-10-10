@@ -4,7 +4,7 @@ import {
 } from "./deps.ts"
 import { loadSlashCommands } from "./utils/loaders.ts"
 
-const client = new Client({ token: config.TOKEN })
+const client = new Client({ token: Deno.args[0] == 'test' ? config.TEST_TOKEN : config.TOKEN })
 
 client.on("ready", async () => {
   const commands = await client.interactions.commands.all()
@@ -92,6 +92,20 @@ client.on("interactionCreate", async (i) => {
       )
     }
   }
+})
+
+client.interactions.autocomplete("meme", "nazwa", async (d) => {
+  const memeName = d.option<string>("nazwa")?.toLowerCase() ?? ""
+
+  const memeNames = ["futureme"]
+
+  const matchingMemes = memeNames.filter((elt) =>
+    elt.toLowerCase().startsWith(memeName)
+  )
+
+  d.autocomplete(
+    matchingMemes.map((elt) => ({ name: elt, value: elt })),
+  )
 })
 
 client.interactions.on("interactionError", console.log)
