@@ -29,26 +29,6 @@ client.on("ready", async () => {
   console.log("Hi, I'm " + client.user?.tag)
 })
 
-client.on("messageCreate", (msg) => {
-  for (const relay of config.RELAY) {
-    if (msg.guild?.id === relay.GUILD_ID && msg.channel.id === relay.CHANNEL_ID) {
-
-      const messageBody = {
-        content: msg.content + (msg.attachments.length + (msg.stickerItems?.length ?? 0) > 0 ? msg.content.length > 0 ? "\n" : "" + "{ATTACHMENTS: (" + [...msg.attachments, ...(msg.stickerItems?.map(elt => ({ url: 'https://cdn.discordapp.com/stickers/' + elt.id + '.png' })) ?? [])].map((elt, i) => `[item: ${i}](${elt.url})`).join(", ") + ")}" : ""),
-        avatar_url: msg.author.avatarURL(),
-        username: msg.member?.displayName ?? msg.author.username,
-        embeds: msg.embeds,
-      }
-
-      fetch(config.GUILDED_RELAY_URL, {
-        method: "POST", body: JSON.stringify(messageBody), headers: {
-          "Content-Type": "application/json",
-        }
-      })
-    }
-  }
-})
-
 client.interactions.handle("*", (d: SlashCommandInteraction) => {
   d.reply({
     flags: InteractionResponseFlags.EPHEMERAL,
@@ -94,7 +74,7 @@ client.on("interactionCreate", async (i) => {
   }
 })
 
-client.interactions.autocomplete("meme", "nazwa", async (d) => {
+client.interactions.autocomplete("meme", "nazwa", (d) => {
   const memeName = d.option<string>("nazwa")?.toLowerCase() ?? ""
 
   const memeNames = ["futureme"]
