@@ -77,7 +77,7 @@ client.on("interactionCreate", async (i) => {
 client.interactions.autocomplete("meme", "nazwa", (d) => {
   const memeName = d.option<string>("nazwa")?.toLowerCase() ?? ""
 
-  const memeNames = ["futureme"]
+  const memeNames = ["futureme", "radek@gwiazda"]
 
   const matchingMemes = memeNames.filter((elt) =>
     elt.toLowerCase().startsWith(memeName)

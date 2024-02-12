@@ -26,5 +26,10 @@ export const Execute = async (interaction: SlashCommandInteraction) => {
         files: [await MessageAttachment.load("https://i.imgflip.com/6jmgmz.png?a471367")]
       })
       break
+    case "radek@gwiazda":
+      await interaction.editResponse({
+        files: [await MessageAttachment.load("https://cdn.discordapp.com/attachments/1154878921620340898/1206693069282349096/9k.png?ex=65dcef7e&is=65ca7a7e&hm=c982afaee75606bde0567ad056fbcc865e503abb2eb34a94ae537d64754b32e6&")]
+      })
+      break
   }
 }
